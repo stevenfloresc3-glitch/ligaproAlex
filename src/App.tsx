@@ -13,25 +13,19 @@ import { NeonAuthDialog, NeonUser } from './components/NeonAuthDialog';
 import { ProfileView } from './components/ProfileView';
 import { PronosticosView } from './components/PronosticosView';
 import { StandingsView } from './components/StandingsView';
-import { authClient } from './lib/auth';
+import { authClient, getNeonAuthToken } from './lib/auth';
 import {
   INITIAL_CLUBS,
   INITIAL_MATCHES,
   OFFICIAL_RESOLUTIONS,
   PLAYER_STATS,
 } from './data/ligaProData';
-import { AuthSession, Match, NavSection } from './types/tournament';
+import { AuthSession, Match, NavSection, UserRole } from './types/tournament';
 
 export default function App() {
-  const session: AuthSession = {
-    role: 'publico',
-    name: 'Consulta pública',
-    email: 'Vista de demostración',
-    roleLabel: 'Solo lectura',
-    readOnly: true,
-  };
   const authConfigured = Boolean(authClient);
   const [authUser, setAuthUser] = useState<NeonUser | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>('publico');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try { return localStorage.getItem('ligapro-theme') === 'dark'; } catch { return false; }
   });
@@ -39,6 +33,25 @@ export default function App() {
   const [clubs, setClubs] = useState(INITIAL_CLUBS);
   const [matches, setMatches] = useState<Match[]>(INITIAL_MATCHES);
   const [isLiveData, setIsLiveData] = useState(false);
+
+  const roleLabels: Record<UserRole, string> = {
+    publico: 'Aficionado · Solo lectura',
+    delegado: 'Delegado de club',
+    comisario: 'Comisario',
+    admin: 'Administrador LigaPro',
+  };
+  const session: AuthSession = {
+    role: userRole,
+    name: authUser?.name || authUser?.email.split('@')[0] || 'Aficionado',
+    email: authUser?.email || '',
+    roleLabel: roleLabels[userRole],
+    readOnly: userRole === 'publico',
+  };
+  const playerStats = isLiveData ? [] : PLAYER_STATS;
+  const matchesPlayed = clubs.reduce((total, club) => total + club.pj, 0) / 2;
+  const playerStatsEmptyMessage = matchesPlayed === 0
+    ? 'Aún no hay partidos jugados ni goles oficiales registrados en esta temporada.'
+    : 'Neon está conectado, pero las estadísticas individuales todavía no están enlazadas a esta pantalla.';
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
@@ -49,6 +62,27 @@ export default function App() {
   useEffect(() => {
     let active = true;
     if (!authUser) return () => { active = false; };
+
+    const loadRole = async () => {
+      try {
+        if (!authClient) return;
+        const token = await getNeonAuthToken();
+        if (!token) return;
+        const response = await fetch('/api/profile', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) return;
+        const payload = await response.json() as { role?: UserRole };
+        if (active && payload.role && payload.role in roleLabels) {
+          setUserRole(payload.role);
+        }
+      } catch {
+        // Missing role data keeps the account in the least-privileged role.
+      }
+    };
+
+    setUserRole('publico');
+    void loadRole();
     fetch('/api/data')
       .then(async (response) => {
         if (!response.ok) throw new Error('Neon API no disponible');
@@ -98,6 +132,7 @@ export default function App() {
     try {
       await authClient.signOut();
       setAuthUser(null);
+      setUserRole('publico');
     } catch {
       // Keep the session indicator if Neon could not complete sign-out.
     }
@@ -140,7 +175,7 @@ export default function App() {
           session={session}
           clubs={clubs}
           matches={matches}
-          players={PLAYER_STATS}
+          players={playerStats}
           resolutions={OFFICIAL_RESOLUTIONS}
           onNavigate={setActiveSection}
           onOpenAuth={() => undefined}
@@ -162,11 +197,11 @@ export default function App() {
       )}
 
       {activeSection === 'clubes' && (
-        <ClubsView clubs={clubs} players={PLAYER_STATS} />
+        <ClubsView clubs={clubs} players={playerStats} />
       )}
 
       {activeSection === 'estadisticas' && (
-        <StatsView players={PLAYER_STATS} clubs={clubs} />
+        <StatsView players={playerStats} clubs={clubs} emptyMessage={playerStatsEmptyMessage} />
       )}
 
       {activeSection === 'actas' && (

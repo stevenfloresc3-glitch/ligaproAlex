@@ -194,7 +194,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
 
           <div className="flex items-center gap-3 shrink-0">
             <span className="hidden sm:inline text-xs font-semibold text-slate-600">
-              {authUser ? 'Cuenta conectada · consulta' : session.readOnly ? 'Vista pública' : session.roleLabel}
+              {authUser ? `Cuenta conectada · ${session.roleLabel}` : session.readOnly ? 'Vista pública' : session.roleLabel}
             </span>
             <button
               type="button"

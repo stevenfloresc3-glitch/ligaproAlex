@@ -35,6 +35,9 @@ importers:
       express:
         specifier: ^4.21.2
         version: 4.22.3
+      jose:
+        specifier: 6.2.5
+        version: 6.2.5
       lucide-react:
         specifier: ^0.546.0
         version: 0.546.0(react@19.3.1)

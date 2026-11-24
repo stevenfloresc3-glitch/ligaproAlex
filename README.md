@@ -11,6 +11,10 @@ Aplicación React + TypeScript + Vite basada en los diseños exportados desde St
 
 El contenido queda detrás del registro/inicio de sesión con Neon Managed Auth. Sin `DATABASE_URL`, luego de ingresar la interfaz usa datos DEMO. Agrega `http://localhost:3000` (Vite), `http://localhost:8888` (Netlify Dev) y el dominio de producción a los dominios permitidos de Neon Auth. El perfil muestra el rol actual y los roles de LigaPro disponibles; las cuentas nuevas son aficionado/solo consulta. Los permisos oficiales necesitan una autorización de servidor y asignación de rol. La tabla se ordena según puntos, diferencia y goles; los pronósticos y las apuestas usan créditos virtuales locales, sin dinero real.
 
+## Roles de LigaPro
+
+Los permisos de la aplicación se guardan en `public.app_user_roles`; son independientes de los roles PostgreSQL de Neon. Para configurar el primer administrador, ejecuta `db/migrations/001_app_user_roles.sql` en Neon SQL Editor, rama `production`. Revisa el correo de la asignación inicial antes de ejecutar. El endpoint `/api/profile` valida un JWT de Neon Auth y devuelve solo el rol de la sesión verificada. Consulta [docs/roles-y-permisos.md](docs/roles-y-permisos.md) para el procedimiento y sus límites.
+
 ## Netlify
 
 Conecta el repositorio en Netlify, define `DATABASE_URL` y publica con `npm run build` y directorio `dist`. `VITE_NEON_AUTH_URL` es opcional: solo configúrala para sobrescribir el endpoint de Auth predeterminado. Añade el dominio HTTPS de Netlify a los dominios permitidos de Neon Auth. La función pública `/.netlify/functions/data` lee clubes, tabla acumulada y partidos desde Neon. `netlify.toml` define la ruta `/api/data` y el fallback de la SPA.

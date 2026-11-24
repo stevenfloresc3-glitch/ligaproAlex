@@ -55,7 +55,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, onSignO
       <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="rounded-xl bg-blue-50 p-2.5 text-[#1E3A8A]"><Trophy className="h-5 w-5" /></div>
-          <div><h2 className="font-display text-lg font-bold text-[#0F172A]">Roles de la plataforma</h2><p className="mt-1 text-sm text-slate-600">Tu cuenta actualmente tiene permisos de aficionado. Los roles oficiales requieren asignación de un administrador.</p></div>
+          <div><h2 className="font-display text-lg font-bold text-[#0F172A]">Roles de la plataforma</h2><p className="mt-1 text-sm text-slate-600">Tu rol actual es {currentRole.title}. Los roles oficiales requieren asignación autorizada.</p></div>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {ROLES.map((role) => {

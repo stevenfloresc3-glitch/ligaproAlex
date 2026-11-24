@@ -15,6 +15,7 @@ import {
   OfficialResolution,
   PlayerStat,
 } from '../types/tournament';
+import { getCurrentMatchday } from '../utils/currentMatchday';
 import { ClubBadge } from './ClubBadge';
 import { StandingsView } from './StandingsView';
 
@@ -58,7 +59,14 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       ? (totalGoals / totalMatchesPlayed).toFixed(2)
       : '0.00';
 
-  const featuredMatches = matches.filter((m) => m.matchday === 14).slice(0, 4);
+  const currentMatchday = getCurrentMatchday(matches);
+  const currentRoundMatches = matches.filter((match) => match.matchday === currentMatchday);
+  const featuredMatches = currentRoundMatches.slice(0, 4);
+  const roundStatus = currentRoundMatches.some((match) => match.status === 'En curso')
+    ? 'En desarrollo'
+    : currentRoundMatches.some((match) => match.status === 'Programado')
+      ? 'Por iniciar'
+      : 'Finalizada';
   const topScorers = [...players]
     .sort((a, b) => b.goals - a.goals || b.assists - a.assists)
     .slice(0, 5);
@@ -93,7 +101,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             className="min-h-[44px] inline-flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-4 py-2.5 text-xs font-semibold text-white whitespace-nowrap hover:bg-[#172E6E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E3A8A]"
           >
             <Calendar className="h-4 w-4" aria-hidden="true" />
-            <span>Ver Fecha 14</span>
+            <span>Ver Fecha {currentMatchday}</span>
           </button>
           <button
             type="button"
@@ -119,10 +127,10 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-5">
           <p className="text-xs font-medium text-slate-600">Jornada Actual</p>
           <p className="mt-2 font-mono-tabular text-2xl sm:text-3xl font-bold text-[#1E3A8A]">
-            Fecha 14
+            Fecha {currentMatchday}
           </p>
           <p className="mt-1 text-xs text-[#047857] font-medium">
-            En desarrollo
+            {roundStatus}
           </p>
         </div>
 
@@ -133,7 +141,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <p className="mt-2 font-mono-tabular text-2xl sm:text-3xl font-bold text-[#0F172A]">
             {Math.round(totalMatchesPlayed)}
           </p>
-          <p className="mt-1 text-xs text-slate-500">de 240 programados</p>
+          <p className="mt-1 text-xs text-slate-500">de {matches.length} programados</p>
         </div>
 
         <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-5">
@@ -153,12 +161,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Columna principal (8 cols) */}
         <div className="space-y-6 lg:col-span-8">
-          {/* Partidos destacados de Fecha 14 */}
+          {/* Partidos destacados de la jornada actual */}
           <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
             <div className="flex items-center justify-between gap-3 border-b border-[#E2E8F0] pb-4">
               <div>
                 <h2 className="font-display text-lg font-bold text-[#0F172A]">
-                  Jornada 14 · Encuentros Destacados
+                  Jornada {currentMatchday} · Encuentros Destacados
                 </h2>
                 <p className="text-xs text-slate-600">
                   Resultados recientes y programación oficial del fin de semana
@@ -265,7 +273,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             {session.readOnly ? (
               <div className="mt-3 space-y-4">
                 <p className="text-sm leading-relaxed text-slate-600">
-                  {isAuthenticated ? <>Tu sesión está activa como <span className="font-semibold text-[#0F172A]">Público / Prensa</span>. Puedes consultar la información y participar en los pronósticos con créditos virtuales.</> : <>Navegas como <span className="font-semibold text-[#0F172A]">Público / Prensa</span>. Puedes consultar tablas, fixture, clubes, goleadores y boletines oficiales.</>}
+                  {isAuthenticated ? <>Tu sesión está activa como <span className="font-semibold text-[#0F172A]">{session.roleLabel}</span>. Puedes consultar la información y participar en los pronósticos con créditos virtuales.</> : <>Navegas como <span className="font-semibold text-[#0F172A]">Público / Prensa</span>. Puedes consultar tablas, fixture, clubes, goleadores y boletines oficiales.</>}
                 </p>
                 <button
                   type="button"
@@ -318,7 +326,13 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 Ver más
               </button>
             </div>
-            <ul className="mt-3 divide-y divide-slate-100">
+            {topScorers.length === 0 ? (
+              <p className="mt-4 rounded-lg bg-slate-50 px-3 py-4 text-sm text-slate-600">
+                {totalMatchesPlayed === 0
+                  ? 'Aún no hay partidos jugados ni goles oficiales registrados en esta temporada.'
+                  : 'Las estadísticas individuales todavía no están disponibles desde Neon.'}
+              </p>
+            ) : <ul className="mt-3 divide-y divide-slate-100">
               {topScorers.map((player, index) => {
                 const club = clubMap.get(player.clubId);
                 return (
@@ -346,7 +360,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                   </li>
                 );
               })}
-            </ul>
+            </ul>}
           </section>
 
           {/* Última resolución oficial */}

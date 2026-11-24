@@ -6,6 +6,7 @@ import {
   Match,
   OfficialResolution,
 } from '../types/tournament';
+import { getCurrentMatchday } from '../utils/currentMatchday';
 
 interface ActasViewProps {
   session: AuthSession;
@@ -35,6 +36,7 @@ export const ActasView: React.FC<ActasViewProps> = ({
   onApproveActa,
   onJumpToFixture,
 }) => {
+  const currentMatchday = getCurrentMatchday(matches);
   const [squad, setSquad] = useState(DELEGADO_SQUAD_DEFAULT);
   const [nominaSubmitted, setNominaSubmitted] = useState(false);
 
@@ -133,7 +135,7 @@ export const ActasView: React.FC<ActasViewProps> = ({
           <div className="flex flex-col gap-3 border-b border-[#E2E8F0] pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-display text-lg font-bold text-[#0F172A]">
-                Control de Actas de Partido · Fecha 14
+                Control de Actas de Partido · Fecha {currentMatchday}
               </h2>
               <p className="mt-0.5 text-sm text-slate-600">
                 {session.role === 'admin'

@@ -239,9 +239,10 @@ export const ClubsView: React.FC<ClubsViewProps> = ({ clubs, players }) => {
 interface StatsViewProps {
   players: PlayerStat[];
   clubs: Club[];
+  emptyMessage?: string;
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({ players, clubs }) => {
+export const StatsView: React.FC<StatsViewProps> = ({ players, clubs, emptyMessage = 'No hay estadísticas individuales para mostrar.' }) => {
   const [category, setCategory] = useState<'goles' | 'asistencias' | 'disciplina'>('goles');
 
   const clubMap = useMemo(() => {
@@ -331,7 +332,13 @@ export const StatsView: React.FC<StatsViewProps> = ({ players, clubs }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E2E8F0] text-sm">
-            {sortedPlayers.map((player, idx) => {
+            {sortedPlayers.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-5 py-12 text-center text-sm text-slate-500">
+                  {emptyMessage}
+                </td>
+              </tr>
+            ) : sortedPlayers.map((player, idx) => {
               const club = clubMap.get(player.clubId);
               return (
                 <tr key={player.id} className="hover:bg-[#F8FAFC]">
