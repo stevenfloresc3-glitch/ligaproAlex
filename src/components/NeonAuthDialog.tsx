@@ -34,20 +34,46 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
 
     setPending(true);
     try {
-      const result = mode === 'signup'
-        ? await authClient.signUp.email({
-            name: email.trim().split('@')[0] || 'Usuario LigaPro',
-            email: email.trim(),
-            password,
-          })
-        : await authClient.signIn.email({ email: email.trim(), password });
+      let result;
+      try {
+        result = mode === 'signup'
+          ? await authClient.signUp.email({
+              name: email.trim().split('@')[0] || 'Usuario LigaPro',
+              email: email.trim(),
+              password,
+            })
+          : await authClient.signIn.email({ email: email.trim(), password });
+      } catch (cause) {
+        const causeMessage = cause instanceof Error ? cause.message : '';
+        if (mode === 'signup' && /already|exist|registered|duplicat|USER_ALREADY_EXISTS/i.test(causeMessage)) {
+          setError('Este correo ya tiene una cuenta. Selecciona “Ya tengo cuenta” para iniciar sesión.');
+          return;
+        }
+        const detail = causeMessage ? ` (${causeMessage})` : '';
+        setError(`Neon Auth no respondió a la solicitud${detail}. Comprueba la conexión e inténtalo otra vez.`);
+        return;
+      }
 
       if (result.error) {
+        if (mode === 'signup' && /already|exist|registered|duplicat|USER_ALREADY_EXISTS/i.test(result.error.message || '')) {
+          setError('Este correo ya tiene una cuenta. Selecciona “Ya tengo cuenta” para iniciar sesión.');
+          return;
+        }
         setError(result.error.message || 'No se pudo completar la solicitud.');
         return;
       }
 
-      const sessionResult = await authClient.getSession();
+      let sessionResult;
+      try {
+        sessionResult = await authClient.getSession();
+      } catch {
+        if (mode === 'signup') {
+          setNotice('Neon aceptó el registro, pero no se pudo abrir la sesión. Prueba “Ya tengo cuenta” o revisa tu correo por si requiere verificación.');
+        } else {
+          setError('Se aceptó el inicio de sesión, pero no se pudo recuperar la sesión. Intenta de nuevo.');
+        }
+        return;
+      }
       const currentUser = sessionResult.data?.user;
       if (currentUser) {
         onAuthenticated({
@@ -60,8 +86,6 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
       } else {
         setError(sessionResult.error?.message || 'No se pudo recuperar la sesión. Intenta de nuevo.');
       }
-    } catch {
-      setError('No se pudo conectar con Neon Auth. Revisa la URL de autenticación y los dominios permitidos.');
     } finally {
       setPending(false);
     }
