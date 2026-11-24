@@ -25,7 +25,8 @@ interface OverviewViewProps {
   players: PlayerStat[];
   resolutions: OfficialResolution[];
   onNavigate: (section: NavSection) => void;
-  onLogoutToLogin: () => void;
+  onOpenAuth: () => void;
+  isAuthenticated: boolean;
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
@@ -35,7 +36,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   players,
   resolutions,
   onNavigate,
-  onLogoutToLogin,
+  onOpenAuth,
+  isAuthenticated,
 }) => {
   const clubMap = useMemo(() => {
     const map = new Map<string, Club>();
@@ -263,15 +265,15 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             {session.readOnly ? (
               <div className="mt-3 space-y-4">
                 <p className="text-sm leading-relaxed text-slate-600">
-                  Navegas como <span className="font-semibold text-[#0F172A]">Público / Prensa</span>. Puedes consultar tablas, fixture, clubes, goleadores y boletines oficiales.
+                  {isAuthenticated ? <>Tu sesión está activa como <span className="font-semibold text-[#0F172A]">Público / Prensa</span>. Puedes consultar la información y participar en los pronósticos con créditos virtuales.</> : <>Navegas como <span className="font-semibold text-[#0F172A]">Público / Prensa</span>. Puedes consultar tablas, fixture, clubes, goleadores y boletines oficiales.</>}
                 </p>
                 <button
                   type="button"
-                  onClick={onLogoutToLogin}
-                  className="min-h-[46px] w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E3A8A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#172E6E]"
+                  onClick={isAuthenticated ? () => onNavigate('pronosticos') : onOpenAuth}
+                  className={`min-h-[46px] w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white ${isAuthenticated ? 'bg-[#047857] hover:bg-[#065F46]' : 'bg-[#1E3A8A] hover:bg-[#172E6E]'}`}
                 >
-                  <LogIn className="h-4 w-4" aria-hidden="true" />
-                  <span>Ingresar con cuenta oficial</span>
+                  {isAuthenticated ? <ClipboardList className="h-4 w-4" aria-hidden="true" /> : <LogIn className="h-4 w-4" aria-hidden="true" />}
+                  <span>{isAuthenticated ? 'Ir a pronósticos' : 'Ingresar con cuenta oficial'}</span>
                 </button>
               </div>
             ) : (

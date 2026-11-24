@@ -1,5 +1,6 @@
 node_modules/
 .pnpm-store/
+.neon-cli-home/
 .netlify/
 build/
 dist/
@@ -8,3 +9,4 @@ coverage/
 *.log
 .env*
 !.env.example
+.neon

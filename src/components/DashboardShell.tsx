@@ -4,6 +4,7 @@ import {
   CalendarDays,
   FileText,
   LayoutDashboard,
+  LogIn,
   ListOrdered,
   LogOut,
   Shield,
@@ -16,9 +17,12 @@ import { LigaProLogo } from './LigaProLogo';
 interface DashboardShellProps {
   session: AuthSession;
   dataIsLive: boolean;
+  authUser: { email: string; name?: string | null } | null;
+  authConfigured: boolean;
+  onOpenAuth: () => void;
+  onSignOut: () => void;
   activeSection: NavSection;
   onSelectSection: (section: NavSection) => void;
-  onLogout: () => void;
   children: React.ReactNode;
 }
 
@@ -80,9 +84,12 @@ const MOBILE_NAV = DESKTOP_NAV.filter(
 export const DashboardShell: React.FC<DashboardShellProps> = ({
   session,
   dataIsLive,
+  authUser,
+  authConfigured,
+  onOpenAuth,
+  onSignOut,
   activeSection,
   onSelectSection,
-  onLogout,
   children,
 }) => {
   const currentItem =
@@ -135,14 +142,14 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
               <span className="truncate">{session.roleLabel}</span>
             </div>
             <p className="mt-1 text-sm font-bold text-[#0F172A] truncate">
-              {session.name}
+              {authUser?.name || session.name}
             </p>
-            <p className="text-xs text-slate-500 truncate">{session.email}</p>
+            <p className="text-xs text-slate-500 truncate">{authUser?.email ?? session.email}</p>
 
-            {!session.readOnly && (
+            {authUser && (
               <button
                 type="button"
-                onClick={onLogout}
+                onClick={onSignOut}
                 className="mt-3 flex min-h-[40px] w-full items-center justify-center gap-2 rounded-lg border border-[#CBD5E1] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E3A8A]"
               >
                 <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
@@ -174,18 +181,16 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
 
           <div className="flex items-center gap-3 shrink-0">
             <span className="hidden sm:inline text-xs font-semibold text-slate-600">
-              {session.readOnly ? 'Solo lectura' : session.roleLabel}
+              {authUser ? 'Cuenta conectada · consulta' : session.readOnly ? 'Vista pública' : session.roleLabel}
             </span>
-            {!session.readOnly && (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="min-h-[40px] lg:hidden inline-flex items-center gap-1.5 rounded-xl border border-[#CBD5E1] bg-white px-3 py-1.5 text-xs font-semibold text-[#1E3A8A] whitespace-nowrap"
-              >
-                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Salir</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={authUser ? onSignOut : onOpenAuth}
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 text-xs font-semibold text-[#1E3A8A] hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E3A8A]"
+            >
+              {authUser ? <LogOut className="h-4 w-4" aria-hidden="true" /> : <LogIn className="h-4 w-4" aria-hidden="true" />}
+              <span>{authUser ? 'Cerrar sesión' : 'Entrar / crear cuenta'}</span>
+            </button>
           </div>
         </header>
 
@@ -196,7 +201,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
             <p>
               {dataIsLive
                 ? 'Conexión de lectura activa con Neon. Las áreas de administración requieren autenticación real.'
-                : 'Vista de demostración con datos de ejemplo. Configura DATABASE_URL en Netlify para conectar Neon; el inicio de sesión todavía no está conectado.'}
+                : `Vista de demostración con datos de ejemplo. Configura DATABASE_URL en Netlify para conectar Neon.${authConfigured ? '' : ' Añade también VITE_NEON_AUTH_URL para habilitar el registro e inicio de sesión.'}`}
             </p>
           </div>
           {children}

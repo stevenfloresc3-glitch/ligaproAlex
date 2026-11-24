@@ -93,6 +93,13 @@ export const StandingsView: React.FC<StandingsViewProps> = ({
     });
   }, [rankedClubs, compact, search, zoneFilter]);
 
+  const displayedClubs = useMemo(() => [...filteredClubs].sort((a, b) => {
+    const aFavorite = a.id === 'bsc' || a.name.toLowerCase().includes('barcelona');
+    const bFavorite = b.id === 'bsc' || b.name.toLowerCase().includes('barcelona');
+    if (aFavorite !== bFavorite) return aFavorite ? -1 : 1;
+    return a.rank - b.rank;
+  }), [filteredClubs]);
+
   return (
     <section
       aria-label="Tabla de Posiciones LigaPro Serie A"
@@ -105,7 +112,7 @@ export const StandingsView: React.FC<StandingsViewProps> = ({
               Tabla de Posiciones · Serie A 2026
             </h2>
             <p className="mt-0.5 text-sm text-slate-600">
-              Fase Inicial · Clasificación acumulada tras Fecha 13
+              Fase Inicial · Barcelona fijado como favorito; la columna Pos conserva el puesto real
             </p>
           </div>
 
@@ -209,13 +216,11 @@ export const StandingsView: React.FC<StandingsViewProps> = ({
                 </td>
               </tr>
             ) : (
-              filteredClubs.map((club) => (
+              displayedClubs.map((club) => (
                 <tr
                   key={club.id}
                   onClick={() => onSelectClub?.(club.id)}
-                  className={`transition-colors hover:bg-[#F8FAFC] ${
-                    onSelectClub ? 'cursor-pointer' : ''
-                  }`}
+                  className={`transition-colors hover:bg-[#F8FAFC] ${club.id === 'bsc' || club.name.toLowerCase().includes('barcelona') ? 'bg-yellow-50/70' : ''} ${onSelectClub ? 'cursor-pointer' : ''}`}
                 >
                   <td className="py-3 pl-5 pr-2">
                     <div className="flex items-center gap-2">
@@ -233,7 +238,7 @@ export const StandingsView: React.FC<StandingsViewProps> = ({
                       <ClubBadge club={club} size="sm" />
                       <div className="min-w-0">
                         <p className="font-semibold text-[#0F172A] truncate">
-                          {club.name}
+                          {club.name}{(club.id === 'bsc' || club.name.toLowerCase().includes('barcelona')) && <span className="ml-2 rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-bold uppercase text-yellow-900">Favorito</span>}
                         </p>
                         {!compact && (
                           <p className="text-xs text-slate-500 truncate">

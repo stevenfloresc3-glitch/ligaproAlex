@@ -9,8 +9,10 @@ import { ClubsView, StatsView } from './components/ClubsStatsView';
 import { DashboardShell } from './components/DashboardShell';
 import { FixtureView } from './components/FixtureView';
 import { OverviewView } from './components/OverviewView';
+import { NeonAuthDialog, NeonUser } from './components/NeonAuthDialog';
 import { PronosticosView } from './components/PronosticosView';
 import { StandingsView } from './components/StandingsView';
+import { authClient } from './lib/auth';
 import {
   INITIAL_CLUBS,
   INITIAL_MATCHES,
@@ -20,14 +22,15 @@ import {
 import { AuthSession, Match, NavSection } from './types/tournament';
 
 export default function App() {
-  // Public read-only preview until a real authentication provider is configured.
-  const [session, setSession] = useState<AuthSession | null>({
+  const session: AuthSession = {
     role: 'publico',
     name: 'Consulta pública',
     email: 'Vista de demostración',
     roleLabel: 'Solo lectura',
     readOnly: true,
-  });
+  };
+  const authConfigured = Boolean(authClient);
+  const [authUser, setAuthUser] = useState<NeonUser | null>(null);
   const [activeSection, setActiveSection] = useState<NavSection>('resumen');
   const [clubs, setClubs] = useState(INITIAL_CLUBS);
   const [matches, setMatches] = useState<Match[]>(INITIAL_MATCHES);
@@ -35,6 +38,7 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
+    if (!authUser) return () => { active = false; };
     fetch('/api/data')
       .then(async (response) => {
         if (!response.ok) throw new Error('Neon API no disponible');
@@ -77,18 +81,21 @@ export default function App() {
       })
       .catch(() => undefined);
     return () => { active = false; };
-  }, []);
+  }, [authUser]);
 
-  const handleLogout = () => {
-    setSession({
-      role: 'publico',
-      name: 'Consulta pública',
-      email: 'Vista de demostración',
-      roleLabel: 'Solo lectura',
-      readOnly: true,
-    });
-    setActiveSection('resumen');
+  const handleSignOut = async () => {
+    if (!authClient) return;
+    try {
+      await authClient.signOut();
+      setAuthUser(null);
+    } catch {
+      // Keep the session indicator if Neon could not complete sign-out.
+    }
   };
+
+  if (!authUser) {
+    return <NeonAuthDialog required onClose={() => undefined} onAuthenticated={setAuthUser} />;
+  }
 
   const handleUpdateMatch = (updatedMatch: Match) => {
     setMatches((prev) =>
@@ -104,15 +111,17 @@ export default function App() {
     );
   };
 
-  if (!session) return null;
-
   return (
+    <>
     <DashboardShell
       session={session}
       dataIsLive={isLiveData}
+      authUser={authUser}
+      authConfigured={authConfigured}
+      onOpenAuth={() => undefined}
+      onSignOut={handleSignOut}
       activeSection={activeSection}
       onSelectSection={setActiveSection}
-      onLogout={handleLogout}
     >
       {activeSection === 'resumen' && (
         <OverviewView
@@ -122,7 +131,8 @@ export default function App() {
           players={PLAYER_STATS}
           resolutions={OFFICIAL_RESOLUTIONS}
           onNavigate={setActiveSection}
-          onLogoutToLogin={handleLogout}
+          onOpenAuth={() => undefined}
+          isAuthenticated={Boolean(authUser)}
         />
       )}
 
@@ -159,8 +169,9 @@ export default function App() {
       )}
 
       {activeSection === 'pronosticos' && (
-        <PronosticosView matches={matches} clubs={clubs} />
+        <PronosticosView matches={matches} clubs={clubs} userId={authUser.id} />
       )}
     </DashboardShell>
+    </>
   );
 }
