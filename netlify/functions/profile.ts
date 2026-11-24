@@ -38,8 +38,8 @@ async function getProfile(sql: NeonQueryFunction<false, false>, userId: string) 
       COALESCE(profiles.avatar_id, 'ball') AS "avatarId",
       profiles.favorite_club_id::text AS "favoriteClubId"
     FROM (SELECT ${userId}::text AS user_id) AS current_user
-    LEFT JOIN public.app_user_roles AS roles ON roles.user_id = current_user.user_id
-    LEFT JOIN public.app_user_profiles AS profiles ON profiles.user_id = current_user.user_id
+    LEFT JOIN public.app_user_roles AS roles ON roles.user_id::text = current_user.user_id
+    LEFT JOIN public.app_user_profiles AS profiles ON profiles.user_id::text = current_user.user_id
   `;
   const row = rows[0];
   const role = row?.role;
@@ -65,12 +65,20 @@ export default async function handler(request: Request) {
     return Response.json({ error: 'DATABASE_URL no está configurada' }, { status: 503 });
   }
 
+  let userId: string | null;
   try {
-    const userId = await authenticate(request);
-    if (!userId) {
-      return Response.json({ error: 'Sesión no válida' }, { status: 401 });
-    }
+    userId = await authenticate(request);
+  } catch {
+    return Response.json(
+      { error: 'Neon Auth no pudo validar la sesión. Cierra sesión e inicia otra vez.' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
+  if (!userId) {
+    return Response.json({ error: 'Sesión no válida. Cierra sesión e inicia otra vez.' }, { status: 401 });
+  }
 
+  try {
     const sql = neon(connectionString);
 
     if (request.method === 'POST') {
@@ -116,9 +124,10 @@ export default async function handler(request: Request) {
     return Response.json(profile, {
       headers: { 'Cache-Control': 'no-store' },
     });
-  } catch {
+  } catch (cause) {
+    console.error('LigaPro profile query failed:', cause instanceof Error ? cause.message : 'Unknown database error');
     return Response.json(
-      { error: 'No fue posible validar la sesión o consultar el rol' },
+      { error: 'Neon Auth validó tu sesión, pero falló la consulta del perfil o rol en la base. Revisa que las tablas de perfil y roles existan en la rama production.' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } },
     );
   }
