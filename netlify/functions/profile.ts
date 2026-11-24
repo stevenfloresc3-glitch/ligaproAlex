@@ -125,9 +125,18 @@ export default async function handler(request: Request) {
       headers: { 'Cache-Control': 'no-store' },
     });
   } catch (cause) {
-    console.error('LigaPro profile query failed:', cause instanceof Error ? cause.message : 'Unknown database error');
+    const dbError = typeof cause === 'object' && cause !== null ? cause as { code?: unknown; message?: unknown } : null;
+    const sqlState = typeof dbError?.code === 'string' ? dbError.code : '';
+    console.error('LigaPro profile query failed:', sqlState || 'unknown', typeof dbError?.message === 'string' ? dbError.message : 'Unknown database error');
+    const errorMessage = sqlState === '28P01'
+      ? 'Neon rechazó las credenciales de DATABASE_URL. Actualiza esa variable en Netlify con la conexión vigente de la rama production.'
+      : sqlState === '42P01'
+        ? 'Falta una tabla de perfil o roles en la rama de Neon conectada. Ejecuta las migraciones 001 y 002 en production.'
+        : sqlState === '42883' || sqlState === '42804'
+          ? 'Las columnas de roles o perfiles tienen tipos distintos a los esperados. Revisa la migración 002 en Neon.'
+          : 'No se pudo consultar el perfil en Neon. Revisa DATABASE_URL y que las tablas de perfil y roles existan en la rama production.';
     return Response.json(
-      { error: 'Neon Auth validó tu sesión, pero falló la consulta del perfil o rol en la base. Revisa que las tablas de perfil y roles existan en la rama production.' },
+      { error: errorMessage },
       { status: 503, headers: { 'Cache-Control': 'no-store' } },
     );
   }
