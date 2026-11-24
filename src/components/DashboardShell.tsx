@@ -7,6 +7,7 @@ import {
   ListOrdered,
   LogOut,
   Shield,
+  Target,
   Users,
 } from 'lucide-react';
 import { AuthSession, NavSection } from '../types/tournament';
@@ -63,10 +64,18 @@ const DESKTOP_NAV: {
     mobileLabel: 'Actas',
     icon: FileText,
   },
+  {
+    id: 'pronosticos',
+    label: 'Pronósticos y simulador',
+    mobileLabel: 'Pronósticos',
+    icon: Target,
+  },
 ];
 
 // Bottom bar on mobile uses 5 ergonomic touch targets
-const MOBILE_NAV = DESKTOP_NAV.filter((item) => item.id !== 'estadisticas');
+const MOBILE_NAV = DESKTOP_NAV.filter(
+  (item) => item.id !== 'estadisticas' && item.id !== 'actas',
+);
 
 export const DashboardShell: React.FC<DashboardShellProps> = ({
   session,

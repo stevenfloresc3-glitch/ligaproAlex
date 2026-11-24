@@ -9,6 +9,7 @@ import { ClubsView, StatsView } from './components/ClubsStatsView';
 import { DashboardShell } from './components/DashboardShell';
 import { FixtureView } from './components/FixtureView';
 import { OverviewView } from './components/OverviewView';
+import { PronosticosView } from './components/PronosticosView';
 import { StandingsView } from './components/StandingsView';
 import {
   INITIAL_CLUBS,
@@ -155,6 +156,10 @@ export default function App() {
           onApproveActa={handleApproveActa}
           onJumpToFixture={() => setActiveSection('fixture')}
         />
+      )}
+
+      {activeSection === 'pronosticos' && (
+        <PronosticosView matches={matches} clubs={clubs} />
       )}
     </DashboardShell>
   );

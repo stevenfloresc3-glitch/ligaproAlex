@@ -86,4 +86,5 @@ export type NavSection =
   | 'fixture'
   | 'clubes'
   | 'estadisticas'
-  | 'actas';
+  | 'actas'
+  | 'pronosticos';
