@@ -14,6 +14,7 @@ import { ProfileView } from './components/ProfileView';
 import { PronosticosView } from './components/PronosticosView';
 import { StandingsView } from './components/StandingsView';
 import { authClient, getNeonAuthToken } from './lib/auth';
+import { DEFAULT_PROFILE_SETTINGS, UserProfileSettings } from './types/profile';
 import {
   INITIAL_CLUBS,
   INITIAL_MATCHES,
@@ -26,6 +27,7 @@ export default function App() {
   const authConfigured = Boolean(authClient);
   const [authUser, setAuthUser] = useState<NeonUser | null>(null);
   const [userRole, setUserRole] = useState<UserRole>('publico');
+  const [profileSettings, setProfileSettings] = useState<UserProfileSettings>(DEFAULT_PROFILE_SETTINGS);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try { return localStorage.getItem('ligapro-theme') === 'dark'; } catch { return false; }
   });
@@ -42,7 +44,7 @@ export default function App() {
   };
   const session: AuthSession = {
     role: userRole,
-    name: authUser?.name || authUser?.email.split('@')[0] || 'Aficionado',
+    name: profileSettings.displayName || authUser?.name || authUser?.email.split('@')[0] || 'Aficionado',
     email: authUser?.email || '',
     roleLabel: roleLabels[userRole],
     readOnly: userRole === 'publico',
@@ -72,16 +74,18 @@ export default function App() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) return;
-        const payload = await response.json() as { role?: UserRole };
+        const payload = await response.json() as { role?: UserRole; profile?: UserProfileSettings };
         if (active && payload.role && payload.role in roleLabels) {
           setUserRole(payload.role);
         }
+        if (active && payload.profile) setProfileSettings(payload.profile);
       } catch {
         // Missing role data keeps the account in the least-privileged role.
       }
     };
 
     setUserRole('publico');
+    setProfileSettings(DEFAULT_PROFILE_SETTINGS);
     void loadRole();
     fetch('/api/data')
       .then(async (response) => {
@@ -133,6 +137,7 @@ export default function App() {
       await authClient.signOut();
       setAuthUser(null);
       setUserRole('publico');
+      setProfileSettings(DEFAULT_PROFILE_SETTINGS);
     } catch {
       // Keep the session indicator if Neon could not complete sign-out.
     }
@@ -156,12 +161,34 @@ export default function App() {
     );
   };
 
+  const handleSaveProfile = async (profile: UserProfileSettings) => {
+    const token = await getNeonAuthToken();
+    if (!token) throw new Error('Tu sesión venció. Cierra sesión e ingresa otra vez.');
+    const response = await fetch('/api/profile', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...profile,
+        favoriteClubId: profile.favoriteClubId || null,
+      }),
+    });
+    const payload = await response.json() as { error?: string; profile?: UserProfileSettings; role?: UserRole };
+    if (!response.ok || !payload.profile) {
+      throw new Error(payload.error || 'No se pudo guardar el perfil. Revisa la conexión con Neon.');
+    }
+    setProfileSettings(payload.profile);
+    if (payload.role && payload.role in roleLabels) setUserRole(payload.role);
+  };
+
   return (
     <>
     <DashboardShell
       session={session}
       dataIsLive={isLiveData}
-      authUser={authUser}
+      authUser={authUser ? { ...authUser, name: profileSettings.displayName || authUser.name } : null}
       authConfigured={authConfigured}
       onOpenAuth={() => undefined}
       onSignOut={handleSignOut}
@@ -220,7 +247,15 @@ export default function App() {
       )}
 
       {activeSection === 'perfil' && (
-        <ProfileView user={authUser} session={session} onSignOut={handleSignOut} />
+        <ProfileView
+          user={authUser}
+          session={session}
+          clubs={clubs}
+          profile={profileSettings}
+          canSaveProfile={isLiveData}
+          onSaveProfile={handleSaveProfile}
+          onSignOut={handleSignOut}
+        />
       )}
     </DashboardShell>
     </>

@@ -15,6 +15,8 @@ El contenido queda detrás del registro/inicio de sesión con Neon Managed Auth.
 
 Los permisos de la aplicación se guardan en `public.app_user_roles`; son independientes de los roles PostgreSQL de Neon. Para configurar el primer administrador, ejecuta `db/migrations/001_app_user_roles.sql` en Neon SQL Editor, rama `production`. Revisa el correo de la asignación inicial antes de ejecutar. El endpoint `/api/profile` valida un JWT de Neon Auth y devuelve solo el rol de la sesión verificada. Consulta [docs/roles-y-permisos.md](docs/roles-y-permisos.md) para el procedimiento y sus límites.
 
+El perfil editable guarda nombre visible, avatar prediseñado y equipo favorito por usuario en Neon. Ejecuta `db/migrations/002_user_profiles.sql` en la misma rama; es compatible con haber ejecutado antes la migración de roles. Revisa [docs/perfil-usuario.md](docs/perfil-usuario.md) antes de habilitar el formulario.
+
 ## Netlify
 
 Conecta el repositorio en Netlify, define `DATABASE_URL` y publica con `npm run build` y directorio `dist`. `VITE_NEON_AUTH_URL` es opcional: solo configúrala para sobrescribir el endpoint de Auth predeterminado. Añade el dominio HTTPS de Netlify a los dominios permitidos de Neon Auth. La función pública `/.netlify/functions/data` lee clubes, tabla acumulada y partidos desde Neon. `netlify.toml` define la ruta `/api/data` y el fallback de la SPA.

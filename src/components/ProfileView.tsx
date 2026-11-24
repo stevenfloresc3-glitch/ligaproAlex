@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 import { BadgeCheck, CircleUserRound, LogOut, Shield, ShieldCheck, Trophy } from 'lucide-react';
-import { AuthSession, UserRole } from '../types/tournament';
+import { AuthSession, Club, UserRole } from '../types/tournament';
+import { PROFILE_AVATARS, UserProfileSettings } from '../types/profile';
+import { ClubBadge } from './ClubBadge';
 
 interface ProfileViewProps {
   user: { id: string; email: string; name?: string | null };
   session: AuthSession;
+  clubs: Club[];
+  profile: UserProfileSettings;
+  canSaveProfile: boolean;
+  onSaveProfile: (profile: UserProfileSettings) => Promise<void>;
   onSignOut: () => void;
 }
 
@@ -15,9 +21,32 @@ const ROLES: { id: UserRole; title: string; description: string }[] = [
   { id: 'admin', title: 'Administrador LigaPro', description: 'Supervisa clubes, temporadas, usuarios y la operación oficial de la plataforma.' },
 ];
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, onSignOut }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, clubs, profile, canSaveProfile, onSaveProfile, onSignOut }) => {
+  const [form, setForm] = useState<UserProfileSettings>(profile);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => setForm(profile), [profile]);
+
   const currentRole = ROLES.find((role) => role.id === session.role) ?? ROLES[0];
-  const initials = (user.name || user.email).trim().slice(0, 1).toUpperCase();
+  const avatar = PROFILE_AVATARS.find((item) => item.id === form.avatarId) ?? PROFILE_AVATARS[0];
+  const favoriteClub = clubs.find((club) => club.id === form.favoriteClubId);
+
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setSaved(false);
+    setError('');
+    try {
+      await onSaveProfile({ ...form, displayName: form.displayName.trim() });
+      setSaved(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo guardar el perfil. Inténtalo otra vez.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -30,11 +59,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, onSignO
       <section className="overflow-hidden rounded-2xl border border-[#D9E2F0] bg-white shadow-sm">
         <div className="bg-gradient-to-r from-[#0B1739] to-[#1E3A8A] p-6 text-white sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-2xl font-extrabold text-emerald-300">{initials}</div>
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-3xl" aria-label={`Avatar ${avatar.name}`}>
+              {avatar.emoji}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-200">Cuenta LigaPro</p>
-              <h2 className="mt-1 truncate font-display text-2xl font-bold">{user.name || 'Aficionado'}</h2>
+              <h2 className="mt-1 truncate font-display text-2xl font-bold">{form.displayName || user.name || 'Aficionado'}</h2>
               <p className="mt-1 truncate text-sm text-blue-100">{user.email}</p>
+              {favoriteClub && <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-white"><ClubBadge club={favoriteClub} size="sm" /> Hincha de {favoriteClub.name}</div>}
             </div>
             <button type="button" onClick={onSignOut} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/25 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"><LogOut className="h-4 w-4" />Cerrar sesión</button>
           </div>
@@ -50,6 +82,65 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, onSignO
             <p className="mt-1 text-xs leading-relaxed text-emerald-900">{currentRole.description}</p>
           </div>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm sm:p-6">
+        <div>
+          <h2 className="font-display text-lg font-bold text-[#0F172A]">Personaliza tu perfil</h2>
+          <p className="mt-1 text-sm text-slate-600">Elige cómo apareces y cuál es tu equipo favorito.</p>
+        </div>
+        <form onSubmit={handleSave} className="mt-5 space-y-5">
+          <label className="block text-sm font-semibold text-slate-700">
+            Nombre para mostrar
+            <input
+              type="text"
+              maxLength={60}
+              value={form.displayName}
+              onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
+              placeholder={user.name || 'Escribe tu nombre'}
+              className="mt-1.5 min-h-11 w-full rounded-lg border border-[#CBD5E1] px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
+
+          <label className="block text-sm font-semibold text-slate-700">
+            Equipo favorito
+            <select
+              value={form.favoriteClubId}
+              onChange={(event) => setForm((current) => ({ ...current, favoriteClubId: event.target.value }))}
+              disabled={!canSaveProfile}
+              className="mt-1.5 min-h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="">Todavía no elijo un equipo</option>
+              {clubs.map((club) => <option key={club.id} value={club.id}>{club.name}</option>)}
+            </select>
+          </label>
+
+          <fieldset>
+            <legend className="text-sm font-semibold text-slate-700">Avatar</legend>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {PROFILE_AVATARS.map((option) => {
+                const selected = option.id === form.avatarId;
+                return <button
+                  key={option.id}
+                  type="button"
+                  aria-label={`Elegir avatar ${option.name}`}
+                  aria-pressed={selected}
+                  disabled={!canSaveProfile}
+                  onClick={() => setForm((current) => ({ ...current, avatarId: option.id }))}
+                  className={`flex h-14 w-14 items-center justify-center rounded-xl border text-2xl transition-colors ${selected ? 'border-[#1E3A8A] bg-blue-50 ring-2 ring-blue-200' : 'border-[#CBD5E1] bg-white hover:bg-slate-50'}`}
+                >{option.emoji}</button>;
+              })}
+            </div>
+            <p className="mt-2 text-xs text-slate-500">Puedes cambiar tu avatar cuando quieras.</p>
+          </fieldset>
+
+          {!canSaveProfile && <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">Conecta la base de Neon para guardar tu perfil y equipo favorito.</p>}
+          {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+          {saved && <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Perfil guardado en Neon.</p>}
+          <button type="submit" disabled={saving || !canSaveProfile} className="min-h-11 rounded-lg bg-[#1E3A8A] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#172E6E] disabled:cursor-not-allowed disabled:opacity-60">
+            {saving ? 'Guardando…' : 'Guardar cambios'}
+          </button>
+        </form>
       </section>
 
       <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-6">

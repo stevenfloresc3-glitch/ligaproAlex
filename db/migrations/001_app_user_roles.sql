@@ -28,5 +28,5 @@ COMMIT;
 -- confirma que el correo ya exista en Neon Auth y corrige el correo arriba.
 SELECT u.email, r.role
 FROM public.app_user_roles AS r
-JOIN neon_auth."user" AS u ON u.id = r.user_id
+JOIN neon_auth."user" AS u ON u.id::text = r.user_id
 WHERE LOWER(u.email) = LOWER('stevenfloresc3@gmail.com');
