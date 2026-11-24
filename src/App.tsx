@@ -143,10 +143,6 @@ export default function App() {
     }
   };
 
-  if (!authUser) {
-    return <NeonAuthDialog required onClose={() => undefined} onAuthenticated={setAuthUser} />;
-  }
-
   const handleUpdateMatch = (updatedMatch: Match) => {
     setMatches((prev) =>
       prev.map((m) => (m.id === updatedMatch.id ? updatedMatch : m))
@@ -182,6 +178,25 @@ export default function App() {
     setProfileSettings(payload.profile);
     if (payload.role && payload.role in roleLabels) setUserRole(payload.role);
   };
+
+  const handleAuthenticated = async (user: NeonUser, favoriteClubId?: string) => {
+    if (favoriteClubId) {
+      try {
+        await handleSaveProfile({
+          ...DEFAULT_PROFILE_SETTINGS,
+          displayName: user.name || '',
+          favoriteClubId,
+        });
+      } catch {
+        // Sign-up should still succeed; the user can retry saving the favorite in their profile.
+      }
+    }
+    setAuthUser(user);
+  };
+
+  if (!authUser) {
+    return <NeonAuthDialog required onClose={() => undefined} onAuthenticated={handleAuthenticated} />;
+  }
 
   return (
     <>

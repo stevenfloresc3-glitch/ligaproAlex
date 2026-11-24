@@ -1,4 +1,4 @@
-import React, { FormEvent, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { authClient } from '../lib/auth';
 import { LigaProLogo } from './LigaProLogo';
@@ -12,16 +12,35 @@ export interface NeonUser {
 interface NeonAuthDialogProps {
   required?: boolean;
   onClose: () => void;
-  onAuthenticated: (user: NeonUser) => void;
+  onAuthenticated: (user: NeonUser, favoriteClubId?: string) => void | Promise<void>;
 }
 
 export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false, onClose, onAuthenticated }) => {
   const [mode, setMode] = useState<'signup' | 'signin'>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [favoriteClubId, setFavoriteClubId] = useState('');
+  const [clubs, setClubs] = useState<Array<{ id: string; name: string }>>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/data')
+      .then(async (response) => {
+        if (!response.ok) throw new Error('No se pudieron cargar los clubes');
+        return response.json() as Promise<{ clubs?: Array<{ id?: unknown; name?: unknown }> }>;
+      })
+      .then((payload) => {
+        if (!active || !Array.isArray(payload.clubs)) return;
+        setClubs(payload.clubs
+          .filter((club) => typeof club.id === 'string' && typeof club.name === 'string')
+          .map((club) => ({ id: club.id as string, name: club.name as string })));
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -76,11 +95,11 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
       }
       const currentUser = sessionResult.data?.user;
       if (currentUser) {
-        onAuthenticated({
+        await onAuthenticated({
           id: currentUser.id,
           email: currentUser.email,
           name: currentUser.name,
-        });
+        }, mode === 'signup' ? favoriteClubId || undefined : undefined);
       } else if (mode === 'signup') {
         setNotice('Cuenta creada. Si Neon solicita verificar el correo, revisa tu bandeja de entrada.');
       } else {
@@ -113,8 +132,8 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-200">Tu equipo destacado</p>
-              <p className="mt-2 text-2xl font-extrabold">Barcelona SC <span aria-hidden="true">⭐</span></p>
-              <p className="mt-1 text-sm text-blue-100/75">El Ídolo del Astillero</p>
+              <p className="mt-2 text-2xl font-extrabold">{clubs.find((club) => club.id === favoriteClubId)?.name || 'Elige tu equipo'} <span aria-hidden="true">⭐</span></p>
+              <p className="mt-1 text-sm text-blue-100/75">{favoriteClubId ? 'Tu equipo favorito' : 'Lo puedes elegir al registrarte'}</p>
             </div>
           </div>
         )}
@@ -146,6 +165,17 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
             Contraseña
             <input type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} className="mt-1.5 min-h-11 w-full rounded-lg border border-[#CBD5E1] px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100" placeholder="Al menos 8 caracteres" />
           </label>
+
+          {mode === 'signup' && (
+            <label className="block text-sm font-semibold text-slate-700">
+              Equipo favorito <span className="font-normal text-slate-500">(opcional)</span>
+              <select value={favoriteClubId} onChange={(event) => setFavoriteClubId(event.target.value)} className="mt-1.5 min-h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100">
+                <option value="">Elige tu equipo favorito</option>
+                {clubs.map((club) => <option key={club.id} value={club.id}>{club.name}</option>)}
+              </select>
+              {clubs.length === 0 && <span className="mt-1 block text-xs font-normal text-slate-500">Los equipos aparecerán cuando Neon esté conectado.</span>}
+            </label>
+          )}
 
           {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
           {notice && <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{notice}</p>}
