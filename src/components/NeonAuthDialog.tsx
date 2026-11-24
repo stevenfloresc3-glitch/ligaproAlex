@@ -102,7 +102,10 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
       )}
       <section role="dialog" aria-modal="true" aria-labelledby="auth-title" className={`relative w-full ${required ? 'mt-16 max-w-5xl overflow-hidden rounded-3xl border border-white/15 bg-white shadow-2xl lg:grid lg:grid-cols-[1fr_1fr]' : 'max-w-md rounded-2xl border border-[#E2E8F0] bg-white shadow-2xl'} p-6 sm:p-8`}>
         {required && (
-          <div className="hidden flex-col justify-between bg-gradient-to-br from-[#142B65] via-[#0B1739] to-[#071127] p-10 text-white lg:flex">
+          <div
+            className="relative hidden flex-col justify-between overflow-hidden bg-cover bg-center p-10 text-white lg:flex"
+            style={{ backgroundImage: "linear-gradient(135deg, rgba(11, 23, 57, 0.72), rgba(7, 17, 39, 0.88)), url('/images/login-ligapro.jpe')" }}
+          >
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-300">La pasión del fútbol ecuatoriano</p>
               <h1 className="mt-5 font-display text-4xl font-extrabold leading-tight">Todo LigaPro,<br />en un solo lugar.</h1>
