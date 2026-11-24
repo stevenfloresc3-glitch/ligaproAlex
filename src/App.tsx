@@ -10,6 +10,7 @@ import { DashboardShell } from './components/DashboardShell';
 import { FixtureView } from './components/FixtureView';
 import { OverviewView } from './components/OverviewView';
 import { NeonAuthDialog, NeonUser } from './components/NeonAuthDialog';
+import { ProfileView } from './components/ProfileView';
 import { PronosticosView } from './components/PronosticosView';
 import { StandingsView } from './components/StandingsView';
 import { authClient } from './lib/auth';
@@ -170,6 +171,10 @@ export default function App() {
 
       {activeSection === 'pronosticos' && (
         <PronosticosView matches={matches} clubs={clubs} userId={authUser.id} />
+      )}
+
+      {activeSection === 'perfil' && (
+        <ProfileView user={authUser} session={session} onSignOut={handleSignOut} />
       )}
     </DashboardShell>
     </>

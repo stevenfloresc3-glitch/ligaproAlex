@@ -69,6 +69,7 @@ export const StandingsView: React.FC<StandingsViewProps> = ({
 }) => {
   const [search, setSearch] = useState('');
   const [zoneFilter, setZoneFilter] = useState<ZoneFilter>('all');
+  const [tableMode, setTableMode] = useState<'fan' | 'official'>('fan');
 
   const rankedClubs = useMemo(() => {
     return sortClubs(clubs).map((club, idx) => ({
@@ -80,8 +81,40 @@ export const StandingsView: React.FC<StandingsViewProps> = ({
     }));
   }, [clubs]);
 
+  const fanRankedClubs = useMemo(() => {
+    const favorite = rankedClubs.find((club) => club.id === 'bsc' || club.name.toLowerCase().includes('barcelona'));
+    if (!favorite) return rankedClubs;
+    const others = rankedClubs.filter((club) => club !== favorite);
+    const [formerLeader, formerSecond, ...remaining] = others;
+    const fanOrder = [favorite, formerSecond, formerLeader, ...remaining].filter(
+      (club): club is NonNullable<typeof club> => club !== undefined,
+    );
+
+    return fanOrder.map((club, index) => {
+      const position = index + 1;
+      const points = position === 1 ? 40 : position === 2 ? 37 : position === 3 ? 34 : Math.max(0, 31 - (position - 4) * 2);
+      const played = 14;
+      const wins = Math.floor(points / 3);
+      const draws = points % 3;
+      const losses = Math.max(0, played - wins - draws);
+      const fantasyRecord = { pj: played, pg: wins, pe: draws, pp: losses, gf: club.gf, gc: club.gc };
+      if (position === 1) { fantasyRecord.gf = 32; fantasyRecord.gc = 9; }
+      if (position === 2) { fantasyRecord.gf = 28; fantasyRecord.gc = 13; }
+      if (position === 3) { fantasyRecord.gf = 26; fantasyRecord.gc = 14; }
+      return {
+        ...club,
+        ...fantasyRecord,
+        rank: position,
+        pts: points,
+        dg: fantasyRecord.gf - fantasyRecord.gc,
+        zoneInfo: getZoneForRank(position),
+      };
+    });
+  }, [rankedClubs]);
+
   const filteredClubs = useMemo(() => {
-    const list = compact ? rankedClubs.slice(0, 6) : rankedClubs;
+    const source = tableMode === 'fan' ? fanRankedClubs : rankedClubs;
+    const list = compact ? source.slice(0, 6) : source;
     return list.filter((c) => {
       const matchesSearch =
         !search.trim() ||
@@ -91,14 +124,9 @@ export const StandingsView: React.FC<StandingsViewProps> = ({
         zoneFilter === 'all' || c.zoneInfo.zone === zoneFilter;
       return matchesSearch && matchesZone;
     });
-  }, [rankedClubs, compact, search, zoneFilter]);
+  }, [rankedClubs, fanRankedClubs, tableMode, compact, search, zoneFilter]);
 
-  const displayedClubs = useMemo(() => [...filteredClubs].sort((a, b) => {
-    const aFavorite = a.id === 'bsc' || a.name.toLowerCase().includes('barcelona');
-    const bFavorite = b.id === 'bsc' || b.name.toLowerCase().includes('barcelona');
-    if (aFavorite !== bFavorite) return aFavorite ? -1 : 1;
-    return a.rank - b.rank;
-  }), [filteredClubs]);
+  const isFanMode = tableMode === 'fan';
 
   return (
     <section
@@ -112,8 +140,12 @@ export const StandingsView: React.FC<StandingsViewProps> = ({
               Tabla de Posiciones · Serie A 2026
             </h2>
             <p className="mt-0.5 text-sm text-slate-600">
-              Fase Inicial · Barcelona fijado como favorito; la columna Pos conserva el puesto real
+              {isFanMode ? 'Modo hincha · tabla de fantasía; no cambia los resultados oficiales' : 'Fase Inicial · Clasificación oficial según puntos, diferencia y goles'}
             </p>
+            <div className="mt-3 inline-flex rounded-xl bg-slate-100 p-1">
+              <button type="button" onClick={() => setTableMode('fan')} aria-pressed={isFanMode} className={`min-h-9 rounded-lg px-3 text-xs font-bold ${isFanMode ? 'bg-[#1E3A8A] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>Modo hincha</button>
+              <button type="button" onClick={() => setTableMode('official')} aria-pressed={!isFanMode} className={`min-h-9 rounded-lg px-3 text-xs font-bold ${!isFanMode ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>Tabla oficial</button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -161,6 +193,16 @@ export const StandingsView: React.FC<StandingsViewProps> = ({
               </button>
             );
           })}
+        </div>
+      )}
+
+      {compact && isFanMode && (
+        <p className="border-b border-yellow-200 bg-yellow-50 px-5 py-2.5 text-xs font-semibold text-yellow-950">⭐ Modo hincha: Barcelona primero con 40 puntos ficticios; el líder anterior aparece tercero.</p>
+      )}
+
+      {!compact && isFanMode && (
+        <div className="mx-5 mt-4 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs leading-relaxed text-yellow-950">
+          Tabla ficticia de hincha: Barcelona aparece primero con 40 puntos; el segundo anterior permanece segundo y el líder anterior queda tercero. Estos puntos no representan estadísticas oficiales ni se guardan en Neon.
         </div>
       )}
 
@@ -216,7 +258,7 @@ export const StandingsView: React.FC<StandingsViewProps> = ({
                 </td>
               </tr>
             ) : (
-              displayedClubs.map((club) => (
+              filteredClubs.map((club) => (
                 <tr
                   key={club.id}
                   onClick={() => onSelectClub?.(club.id)}

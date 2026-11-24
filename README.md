@@ -9,7 +9,7 @@ Aplicación React + TypeScript + Vite basada en los diseños exportados desde St
 3. Copia `.env.example` a `.env.local` y configura `DATABASE_URL` con una cadena de conexión de Neon de solo lectura. El endpoint público de Neon Auth ya está definido como valor predeterminado; puedes sobrescribirlo con `VITE_NEON_AUTH_URL` si usas otra rama o proyecto.
 4. Ejecuta `npx netlify dev` para probar frontend y Netlify Functions juntos.
 
-El contenido queda detrás del registro/inicio de sesión con Neon Managed Auth. Sin `DATABASE_URL`, luego de ingresar la interfaz usa datos DEMO. Agrega `http://localhost:3000` (Vite), `http://localhost:8888` (Netlify Dev) y el dominio de producción a los dominios permitidos de Neon Auth. Las cuentas nuevas tienen acceso de consulta; los permisos oficiales necesitan una autorización de servidor y asignación de rol. El pronosticador incluye apuestas simuladas con créditos virtuales locales, sin dinero real.
+El contenido queda detrás del registro/inicio de sesión con Neon Managed Auth. Sin `DATABASE_URL`, luego de ingresar la interfaz usa datos DEMO. Agrega `http://localhost:3000` (Vite), `http://localhost:8888` (Netlify Dev) y el dominio de producción a los dominios permitidos de Neon Auth. El perfil muestra el rol actual y los roles de LigaPro disponibles; las cuentas nuevas son aficionado/solo consulta. Los permisos oficiales necesitan una autorización de servidor y asignación de rol. La tabla de hincha tiene puntos ficticios y Barcelona primero; la pestaña Tabla oficial conserva el orden real. El pronosticador usa créditos virtuales locales, sin dinero real.
 
 ## Netlify
 

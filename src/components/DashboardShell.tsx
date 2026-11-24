@@ -2,6 +2,7 @@ import React from 'react';
 import {
   BarChart3,
   CalendarDays,
+  CircleUserRound,
   FileText,
   LayoutDashboard,
   LogIn,
@@ -73,6 +74,12 @@ const DESKTOP_NAV: {
     label: 'Pronósticos y simulador',
     mobileLabel: 'Pronósticos',
     icon: Target,
+  },
+  {
+    id: 'perfil',
+    label: 'Mi perfil y roles',
+    mobileLabel: 'Perfil',
+    icon: CircleUserRound,
   },
 ];
 
@@ -211,7 +218,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
       {/* Barra de navegación inferior fija en móvil (< lg) con botones táctiles amplios */}
       <nav
         aria-label="Navegación móvil"
-        className="fixed bottom-0 left-0 right-0 z-40 grid h-16 grid-cols-5 border-t border-[#E2E8F0] bg-white/95 backdrop-blur-md lg:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 grid h-16 grid-cols-6 border-t border-[#E2E8F0] bg-white/95 backdrop-blur-md lg:hidden"
       >
         {MOBILE_NAV.map((item) => {
           const Icon = item.icon;
