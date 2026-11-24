@@ -8,7 +8,9 @@ import {
   LogIn,
   ListOrdered,
   LogOut,
+  Moon,
   Shield,
+  Sun,
   Target,
   Users,
 } from 'lucide-react';
@@ -22,6 +24,8 @@ interface DashboardShellProps {
   authConfigured: boolean;
   onOpenAuth: () => void;
   onSignOut: () => void;
+  isDarkMode: boolean;
+  onToggleTheme: () => void;
   activeSection: NavSection;
   onSelectSection: (section: NavSection) => void;
   children: React.ReactNode;
@@ -95,6 +99,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   authConfigured,
   onOpenAuth,
   onSignOut,
+  isDarkMode,
+  onToggleTheme,
   activeSection,
   onSelectSection,
   children,
@@ -103,11 +109,11 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     DESKTOP_NAV.find((item) => item.id === activeSection) ?? DESKTOP_NAV[0];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A]">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] transition-colors duration-200">
       {/* Barra lateral izquierda fija en computadora (lg+) */}
       <aside
         aria-label="Navegación principal LigaPro"
-        className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-[#E2E8F0] lg:bg-white"
+          className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-[#E2E8F0] lg:bg-white"
       >
         <div className="flex h-16 items-center border-b border-[#E2E8F0] px-5">
           <LigaProLogo variant="light" size="sm" />
@@ -190,6 +196,15 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
             <span className="hidden sm:inline text-xs font-semibold text-slate-600">
               {authUser ? 'Cuenta conectada · consulta' : session.readOnly ? 'Vista pública' : session.roleLabel}
             </span>
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              aria-label={isDarkMode ? 'Activar modo claro' : 'Activar modo oscuro'}
+              title={isDarkMode ? 'Activar modo claro' : 'Activar modo oscuro'}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#CBD5E1] bg-white text-[#1E3A8A] transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E3A8A]"
+            >
+              {isDarkMode ? <Sun className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
+            </button>
             <button
               type="button"
               onClick={authUser ? onSignOut : onOpenAuth}

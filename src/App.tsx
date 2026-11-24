@@ -32,10 +32,19 @@ export default function App() {
   };
   const authConfigured = Boolean(authClient);
   const [authUser, setAuthUser] = useState<NeonUser | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try { return localStorage.getItem('ligapro-theme') === 'dark'; } catch { return false; }
+  });
   const [activeSection, setActiveSection] = useState<NavSection>('resumen');
   const [clubs, setClubs] = useState(INITIAL_CLUBS);
   const [matches, setMatches] = useState<Match[]>(INITIAL_MATCHES);
   const [isLiveData, setIsLiveData] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+    try { localStorage.setItem('ligapro-theme', isDarkMode ? 'dark' : 'light'); } catch { /* Theme still works for this session. */ }
+  }, [isDarkMode]);
 
   useEffect(() => {
     let active = true;
@@ -121,6 +130,8 @@ export default function App() {
       authConfigured={authConfigured}
       onOpenAuth={() => undefined}
       onSignOut={handleSignOut}
+      isDarkMode={isDarkMode}
+      onToggleTheme={() => setIsDarkMode((current) => !current)}
       activeSection={activeSection}
       onSelectSection={setActiveSection}
     >

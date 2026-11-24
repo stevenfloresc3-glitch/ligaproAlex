@@ -27,6 +27,148 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The theme is toggled by adding .dark to <html>; the preference lives in localStorage. */
+html.dark {
+  color-scheme: dark;
+  background-color: #0b1220;
+  color: #e2e8f0;
+}
+
+html.dark body,
+html.dark #root {
+  background-color: #0b1220;
+  color: #e2e8f0;
+}
+
+html.dark [class~="bg-white"],
+html.dark [class~="bg-white/95"] {
+  background-color: #111827 !important;
+}
+
+html.dark [class~="bg-[#F8FAFC]"],
+html.dark [class~="bg-slate-50"] {
+  background-color: #0f172a !important;
+}
+
+html.dark [class~="bg-slate-100"] {
+  background-color: #1f2937 !important;
+}
+
+html.dark [class~="hover:bg-[#F8FAFC]"]:hover,
+html.dark [class~="hover:bg-slate-50"]:hover {
+  background-color: #1f2937 !important;
+}
+
+html.dark [class~="hover:bg-blue-50"]:hover {
+  background-color: #172554 !important;
+}
+
+html.dark [class~="text-[#0F172A]"],
+html.dark [class~="text-slate-900"],
+html.dark [class~="text-slate-800"],
+html.dark [class~="text-slate-700"] {
+  color: #e2e8f0 !important;
+}
+
+html.dark [class~="text-slate-600"],
+html.dark [class~="text-slate-500"] {
+  color: #a8b4c7 !important;
+}
+
+html.dark [class~="text-slate-400"] {
+  color: #94a3b8 !important;
+}
+
+html.dark [class~="text-[#1E3A8A]"] {
+  color: #93c5fd !important;
+}
+
+html.dark [class~="text-[#047857]"],
+html.dark [class~="text-[#065F46]"] {
+  color: #6ee7b7 !important;
+}
+
+html.dark [class~="border-[#E2E8F0]"],
+html.dark [class~="border-[#D9E2F0]"],
+html.dark [class~="border-slate-100"],
+html.dark [class~="border-slate-200"] {
+  border-color: #334155 !important;
+}
+
+html.dark [class~="border-[#CBD5E1]"],
+html.dark [class~="border-slate-300"] {
+  border-color: #475569 !important;
+}
+
+html.dark [class~="divide-[#E2E8F0]"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+
+html.dark [class~="bg-blue-50"] {
+  background-color: #172554 !important;
+}
+
+html.dark [class~="bg-emerald-50"],
+html.dark [class~="bg-emerald-50/60"],
+html.dark [class~="bg-emerald-50/70"] {
+  background-color: #063b32 !important;
+}
+
+html.dark [class~="text-emerald-900"],
+html.dark [class~="text-emerald-800"] {
+  color: #a7f3d0 !important;
+}
+
+html.dark [class~="bg-amber-50"] {
+  background-color: #3b2f12 !important;
+}
+
+html.dark [class~="bg-yellow-50"],
+html.dark [class~="bg-yellow-50/60"],
+html.dark [class~="bg-yellow-100"] {
+  background-color: #3f3510 !important;
+}
+
+html.dark [class~="border-yellow-200"] {
+  border-color: #854d0e !important;
+}
+
+html.dark [class~="text-yellow-900"] {
+  color: #fde68a !important;
+}
+
+html.dark [class~="text-amber-950"],
+html.dark [class~="text-amber-900"] {
+  color: #fde68a !important;
+}
+
+html.dark [class~="bg-red-50"] {
+  background-color: #450a0a !important;
+}
+
+html.dark [class~="bg-red-100"] {
+  background-color: #7f1d1d !important;
+}
+
+html.dark [class~="bg-emerald-100"] {
+  background-color: #064e3b !important;
+}
+
+html.dark [class~="bg-amber-100"] {
+  background-color: #713f12 !important;
+}
+
+html.dark [class~="text-red-800"],
+html.dark [class~="text-red-700"] {
+  color: #fca5a5 !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  color-scheme: dark;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
