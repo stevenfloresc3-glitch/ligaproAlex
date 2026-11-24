@@ -104,7 +104,7 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
         {required && (
           <div
             className="relative hidden flex-col justify-between overflow-hidden bg-cover bg-center p-10 text-white lg:flex"
-            style={{ backgroundImage: "linear-gradient(135deg, rgba(11, 23, 57, 0.72), rgba(7, 17, 39, 0.88)), url('/images/login-ligapro.jpe')" }}
+            style={{ backgroundImage: "linear-gradient(135deg, rgba(11, 23, 57, 0.32), rgba(7, 17, 39, 0.55)), url('/images/login-ligapro.jpe')" }}
           >
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-300">La pasión del fútbol ecuatoriano</p>
