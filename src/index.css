@@ -41,7 +41,8 @@ html.dark #root {
 }
 
 html.dark [class~="bg-white"],
-html.dark [class~="bg-white/95"] {
+html.dark [class~="bg-white/95"],
+html.dark [class~="lg:bg-white"] {
   background-color: #111827 !important;
 }
 
@@ -89,6 +90,7 @@ html.dark [class~="text-[#065F46]"] {
 }
 
 html.dark [class~="border-[#E2E8F0]"],
+html.dark [class~="lg:border-[#E2E8F0]"],
 html.dark [class~="border-[#D9E2F0]"],
 html.dark [class~="border-slate-100"],
 html.dark [class~="border-slate-200"] {

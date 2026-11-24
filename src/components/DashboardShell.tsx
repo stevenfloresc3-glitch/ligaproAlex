@@ -116,7 +116,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-[#E2E8F0] lg:bg-white"
       >
         <div className="flex h-16 items-center border-b border-[#E2E8F0] px-5">
-          <LigaProLogo variant="light" size="sm" />
+          <LigaProLogo variant={isDarkMode ? 'dark' : 'light'} size="sm" />
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
@@ -179,7 +179,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
         <header className="sticky top-0 z-20 flex h-14 lg:h-16 items-center justify-between gap-4 border-b border-[#E2E8F0] bg-white/95 px-4 sm:px-6 lg:px-8 backdrop-blur-md">
           <div className="flex items-center gap-3 min-w-0">
             <div className="lg:hidden">
-              <LigaProLogo variant="light" size="sm" />
+              <LigaProLogo variant={isDarkMode ? 'dark' : 'light'} size="sm" />
             </div>
             <div className="hidden lg:flex items-center gap-2 text-sm">
               <span className="text-slate-500">LigaPro Ecuador</span>
