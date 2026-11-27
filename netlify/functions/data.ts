@@ -52,9 +52,25 @@ export default async function handler() {
     return Response.json({ clubs, standings, matches }, {
       headers: { 'Cache-Control': 'public, max-age=30, s-maxage=60' },
     });
-  } catch {
+  } catch (cause) {
+    const dbError = typeof cause === 'object' && cause !== null
+      ? cause as { code?: unknown; message?: unknown }
+      : null;
+    const errorCode = typeof dbError?.code === 'string' ? dbError.code : 'UNKNOWN';
+    console.error('LigaPro data query failed:', errorCode);
+    const errorMessage = errorCode === '28P01'
+      ? 'Neon rechazó las credenciales de DATABASE_URL. Actualiza la clave con la conexión vigente de la rama production.'
+      : errorCode === '3D000'
+        ? 'La base indicada en DATABASE_URL no existe. Copia la URL de conexión de la base correcta en Neon.'
+        : errorCode === '42P01'
+          ? 'La base conectada no tiene una tabla o vista que la app necesita. DATABASE_URL podría apuntar a otra base o rama de Neon.'
+          : errorCode === '42703'
+            ? 'La estructura de la base conectada no coincide con la que espera la app: falta una columna.'
+            : errorCode.startsWith('08') || errorCode.startsWith('ECONN') || errorCode.startsWith('EAI_')
+              ? 'Netlify no pudo establecer conexión con Neon. Revisa el endpoint y la región de DATABASE_URL.'
+              : 'Neon rechazó una consulta de datos. Revisa el código de error y el esquema de la base conectada.';
     return Response.json(
-      { error: 'No fue posible consultar los datos públicos de LigaPro' },
+      { error: errorMessage, errorCode },
       { status: 503 },
     );
   }

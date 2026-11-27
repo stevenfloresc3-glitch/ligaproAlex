@@ -20,6 +20,7 @@ import { LigaProLogo } from './LigaProLogo';
 interface DashboardShellProps {
   session: AuthSession;
   dataIsLive: boolean;
+  dataUnavailableMessage: string;
   authUser: { email: string; name?: string | null } | null;
   authConfigured: boolean;
   onOpenAuth: () => void;
@@ -95,6 +96,7 @@ const MOBILE_NAV = DESKTOP_NAV.filter(
 export const DashboardShell: React.FC<DashboardShellProps> = ({
   session,
   dataIsLive,
+  dataUnavailableMessage,
   authUser,
   authConfigured,
   onOpenAuth,
@@ -223,7 +225,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
             <p>
               {dataIsLive
                 ? 'Conexión de lectura activa con Neon. Las áreas de administración requieren autenticación real.'
-                : `Vista de demostración con datos de ejemplo. Configura DATABASE_URL en Netlify para conectar Neon.${authConfigured ? '' : ' Añade también VITE_NEON_AUTH_URL para habilitar el registro e inicio de sesión.'}`}
+                : dataUnavailableMessage
+                  ? `Vista DEMO porque falló la carga de Neon: ${dataUnavailableMessage}`
+                  : `Conectando con Neon…${authConfigured ? '' : ' Añade VITE_NEON_AUTH_URL para habilitar el registro e inicio de sesión.'}`}
             </p>
           </div>
           {children}

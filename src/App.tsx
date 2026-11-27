@@ -36,6 +36,7 @@ export default function App() {
   const [clubs, setClubs] = useState(INITIAL_CLUBS);
   const [matches, setMatches] = useState<Match[]>(INITIAL_MATCHES);
   const [isLiveData, setIsLiveData] = useState(false);
+  const [dataLoadError, setDataLoadError] = useState('');
   const [profileApiReady, setProfileApiReady] = useState(false);
   const [profileApiError, setProfileApiError] = useState('');
 
@@ -124,10 +125,21 @@ export default function App() {
     setProfileApiReady(false);
     setProfileApiError('');
     void loadRole();
+    setDataLoadError('');
     fetch('/api/data')
       .then(async (response) => {
-        if (!response.ok) throw new Error('Neon API no disponible');
-        return response.json();
+        const payload = await response.json() as {
+          error?: string;
+          errorCode?: string;
+          clubs?: Record<string, unknown>[];
+          standings?: Record<string, unknown>[];
+          matches?: Record<string, unknown>[];
+        };
+        if (!response.ok) {
+          const code = payload.errorCode ? ` (${payload.errorCode})` : '';
+          throw new Error(`${payload.error || 'Neon API no disponible'}${code}`);
+        }
+        return payload;
       })
       .then((payload) => {
         if (!active) return;
@@ -165,7 +177,9 @@ export default function App() {
         }
         setIsLiveData(true);
       })
-      .catch(() => undefined);
+      .catch((cause: unknown) => {
+        if (active) setDataLoadError(cause instanceof Error ? cause.message : 'Neon no pudo cargar los datos.');
+      });
     return () => { active = false; };
   }, [authUser]);
 
@@ -245,6 +259,7 @@ export default function App() {
     <DashboardShell
       session={session}
       dataIsLive={isLiveData}
+      dataUnavailableMessage={dataLoadError}
       authUser={authUser ? { ...authUser, name: profileSettings.displayName || authUser.name } : null}
       authConfigured={authConfigured}
       onOpenAuth={() => undefined}
