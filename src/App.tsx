@@ -102,9 +102,9 @@ export default function App() {
         const response = await fetch('/api/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const payload = await response.json() as { error?: string; role?: UserRole; profile?: UserProfileSettings };
+        const payload = await response.json() as { error?: string; errorCode?: string; role?: UserRole; profile?: UserProfileSettings };
         if (!response.ok || !payload.profile) {
-          if (active) setProfileApiError(payload.error || 'No se pudo conectar el perfil con Neon. Revisa la configuración de la función /api/profile.');
+          if (active) setProfileApiError(`${payload.error || 'No se pudo conectar el perfil con Neon. Revisa la configuración de la función /api/profile.'}${payload.errorCode ? ` (${payload.errorCode})` : ''}`);
           return;
         }
         if (active && payload.role && payload.role in roleLabels) {
@@ -223,9 +223,9 @@ export default function App() {
         favoriteClubId: profile.favoriteClubId || null,
       }),
     });
-    const payload = await response.json() as { error?: string; profile?: UserProfileSettings; role?: UserRole };
+    const payload = await response.json() as { error?: string; errorCode?: string; profile?: UserProfileSettings; role?: UserRole };
     if (!response.ok || !payload.profile) {
-      throw new Error(payload.error || 'No se pudo guardar el perfil. Revisa la conexión con Neon.');
+      throw new Error(`${payload.error || 'No se pudo guardar el perfil. Revisa la conexión con Neon.'}${payload.errorCode ? ` (${payload.errorCode})` : ''}`);
     }
     setProfileSettings(payload.profile);
     if (payload.role && payload.role in roleLabels) setUserRole(payload.role);
