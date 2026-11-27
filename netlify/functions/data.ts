@@ -57,7 +57,8 @@ export default async function handler() {
       ? cause as { code?: unknown; message?: unknown }
       : null;
     const errorCode = typeof dbError?.code === 'string' ? dbError.code : 'UNKNOWN';
-    console.error('LigaPro data query failed:', errorCode);
+    // Keep the SQLSTATE in one message; Netlify may omit additional console arguments.
+    console.error(`LigaPro data query failed: ${errorCode}`);
     const errorMessage = errorCode === '28P01'
       ? 'Neon rechazó las credenciales de DATABASE_URL. Actualiza la clave con la conexión vigente de la rama production.'
       : errorCode === '3D000'
