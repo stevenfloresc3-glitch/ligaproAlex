@@ -99,12 +99,12 @@ export const PronosticosView: React.FC<PronosticosViewProps> = ({ matches, clubs
   const potentialPayout = selectedPick && odds && Number.isInteger(stake) ? Math.floor(stake * odds[selectedPick]) : 0;
 
   const rounds = useMemo(
-    () => [...new Set(matches.filter((match) => match.status === 'Programado').map((match) => match.matchday))].sort((a, b) => a - b),
+    () => [...new Set(matches.filter((match) => match.status === 'Programado').map((match) => match.matchday ?? 0))].sort((a, b) => a - b),
     [matches],
   );
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
-  const roundNumber = selectedRound && rounds.includes(selectedRound) ? selectedRound : rounds[0];
-  const roundMatches = matches.filter((match) => match.matchday === roundNumber && match.status === 'Programado');
+  const roundNumber = selectedRound !== null && rounds.includes(selectedRound) ? selectedRound : rounds[0];
+  const roundMatches = matches.filter((match) => (match.matchday ?? 0) === roundNumber && match.status === 'Programado');
 
   useEffect(() => { localStorage.setItem(walletKey, JSON.stringify(wallet)); }, [wallet, walletKey]);
 
@@ -246,13 +246,13 @@ export const PronosticosView: React.FC<PronosticosViewProps> = ({ matches, clubs
                     const away = clubMap.get(match.awayClubId);
                     if (!home || !away) return null;
                     const isBarcelonaMatch = isBarcelona(match.homeClubId) || isBarcelona(match.awayClubId);
-                    return <option key={match.id} value={match.id}>{isBarcelonaMatch ? '⭐ ' : ''}{home.name} vs {away.name} · Fecha {match.matchday}</option>;
+                    return <option key={match.id} value={match.id}>{isBarcelonaMatch ? '⭐ ' : ''}{home.name} vs {away.name} · {match.matchday === null ? 'Fecha por asignar' : `Fecha ${match.matchday}`}</option>;
                   })}
                 </select>
 
                 {selectedMatch && selectedHome && selectedAway && odds && (
                   <div className="mt-4 rounded-2xl border border-[#E2E8F0] bg-slate-50 p-4 sm:p-5">
-                    <div className="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500"><span>Fecha {selectedMatch.matchday} · {selectedMatch.date || 'Por definir'} · {selectedMatch.time}</span><span>{selectedMatch.stadium}</span></div>
+                    <div className="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500"><span>{selectedMatch.matchday === null ? 'Fecha por asignar' : `Fecha ${selectedMatch.matchday}`} · {selectedMatch.date || 'Por definir'} · {selectedMatch.time}</span><span>{selectedMatch.stadium}</span></div>
                     <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
                       <div className="flex min-w-0 flex-col items-center gap-2 text-center"><ClubBadge club={selectedHome} size="lg" /><span className="text-sm font-bold text-slate-800">{selectedHome.name}</span></div>
                       <span className="font-display text-sm font-extrabold text-slate-400">VS</span>
@@ -316,13 +316,13 @@ export const PronosticosView: React.FC<PronosticosViewProps> = ({ matches, clubs
             <button type="button" onClick={savePredictions} disabled={!roundMatches.length} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#1E3A8A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#172E6E] disabled:opacity-50"><Save className="h-4 w-4" /> Guardar pronósticos</button>
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2"><span className="mr-1 text-sm font-semibold text-slate-700">Fecha:</span>{rounds.map((round) => <button key={round} type="button" onClick={() => setSelectedRound(round)} aria-pressed={roundNumber === round} className={`min-h-9 rounded-lg px-3 text-sm font-semibold ${roundNumber === round ? 'bg-[#1E3A8A] text-white' : 'border border-[#CBD5E1] text-slate-700 hover:bg-slate-50'}`}>{round}</button>)}</div>
+        <div className="mt-4 flex flex-wrap items-center gap-2"><span className="mr-1 text-sm font-semibold text-slate-700">Fecha:</span>{rounds.map((round) => <button key={round} type="button" onClick={() => setSelectedRound(round)} aria-pressed={roundNumber === round} className={`min-h-9 rounded-lg px-3 text-sm font-semibold ${roundNumber === round ? 'bg-[#1E3A8A] text-white' : 'border border-[#CBD5E1] text-slate-700 hover:bg-slate-50'}`}>{round === 0 ? 'Por asignar' : round}</button>)}</div>
         {saved && <p role="status" className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">Pronósticos guardados en esta cuenta y navegador.</p>}
         {roundMatches.length ? <div className="mt-4 divide-y divide-[#E2E8F0]">{roundMatches.map((match) => {
           const home = clubMap.get(match.homeClubId); const away = clubMap.get(match.awayClubId);
           if (!home || !away) return null;
           const score = predictions[match.id] ?? { home: null, away: null };
-          return <div key={match.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-4 sm:gap-5"><div className="flex min-w-0 items-center justify-end gap-2 text-right"><span className="truncate text-sm font-semibold text-slate-800">{home.name}</span><ClubBadge club={home} size="sm" /></div><div className="flex items-center gap-2"><input aria-label={`Goles pronosticados para ${home.name}`} type="number" min="0" max="15" inputMode="numeric" value={score.home ?? ''} onChange={(event) => updateScore(match.id, 'home', event.target.value)} className="h-11 w-12 rounded-lg border border-[#CBD5E1] text-center font-mono text-lg font-bold text-[#0F172A] focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-blue-100" /><span className="text-sm font-bold text-slate-400">–</span><input aria-label={`Goles pronosticados para ${away.name}`} type="number" min="0" max="15" inputMode="numeric" value={score.away ?? ''} onChange={(event) => updateScore(match.id, 'away', event.target.value)} className="h-11 w-12 rounded-lg border border-[#CBD5E1] text-center font-mono text-lg font-bold text-[#0F172A] focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-blue-100" /></div><div className="flex min-w-0 items-center gap-2"><ClubBadge club={away} size="sm" /><span className="truncate text-sm font-semibold text-slate-800">{away.name}</span></div><p className="col-span-3 -mt-2 text-center text-xs text-slate-500">Fecha {match.matchday} · {match.date} · {match.time}</p></div>;
+          return <div key={match.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-4 sm:gap-5"><div className="flex min-w-0 items-center justify-end gap-2 text-right"><span className="truncate text-sm font-semibold text-slate-800">{home.name}</span><ClubBadge club={home} size="sm" /></div><div className="flex items-center gap-2"><input aria-label={`Goles pronosticados para ${home.name}`} type="number" min="0" max="15" inputMode="numeric" value={score.home ?? ''} onChange={(event) => updateScore(match.id, 'home', event.target.value)} className="h-11 w-12 rounded-lg border border-[#CBD5E1] text-center font-mono text-lg font-bold text-[#0F172A] focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-blue-100" /><span className="text-sm font-bold text-slate-400">–</span><input aria-label={`Goles pronosticados para ${away.name}`} type="number" min="0" max="15" inputMode="numeric" value={score.away ?? ''} onChange={(event) => updateScore(match.id, 'away', event.target.value)} className="h-11 w-12 rounded-lg border border-[#CBD5E1] text-center font-mono text-lg font-bold text-[#0F172A] focus:border-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-blue-100" /></div><div className="flex min-w-0 items-center gap-2"><ClubBadge club={away} size="sm" /><span className="truncate text-sm font-semibold text-slate-800">{away.name}</span></div><p className="col-span-3 -mt-2 text-center text-xs text-slate-500">{match.matchday === null ? 'Fecha por asignar' : `Fecha ${match.matchday}`} · {match.date} · {match.time}</p></div>;
         })}</div> : <div className="mt-5 rounded-xl border border-dashed border-[#CBD5E1] bg-slate-50 p-8 text-center"><p className="font-semibold text-slate-800">No hay partidos programados para pronosticar.</p><p className="mt-1 text-sm text-slate-600">Cuando haya una fecha abierta, aparecerá aquí.</p></div>}
         <p className="mt-4 text-xs text-slate-500">Los pronósticos solo afectan esta proyección; no modifican resultados oficiales.</p>
       </section>

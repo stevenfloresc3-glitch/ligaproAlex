@@ -8,6 +8,7 @@ import {
   MatchStatus,
 } from '../types/tournament';
 import { ClubBadge } from './ClubBadge';
+import { getCurrentMatchday } from '../utils/currentMatchday';
 
 interface FixtureViewProps {
   matches: Match[];
@@ -22,7 +23,7 @@ export const FixtureView: React.FC<FixtureViewProps> = ({
   session,
   onUpdateMatch,
 }) => {
-  const [selectedMatchday, setSelectedMatchday] = useState<number>(14);
+  const [selectedMatchday, setSelectedMatchday] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | MatchStatus>('all');
   const [activeMatch, setActiveMatch] = useState<Match | null>(null);
 
@@ -42,13 +43,22 @@ export const FixtureView: React.FC<FixtureViewProps> = ({
     return map;
   }, [clubs]);
 
+  const availableMatchdays = useMemo(
+    () => [...new Set(matches.map((match) => match.matchday ?? 0))].sort((a, b) => a - b),
+    [matches],
+  );
+  const currentMatchday = getCurrentMatchday(matches);
+  const activeMatchday = selectedMatchday !== null && availableMatchdays.includes(selectedMatchday)
+    ? selectedMatchday
+    : currentMatchday ?? availableMatchdays[0] ?? null;
+
   const filteredMatches = useMemo(() => {
     return matches.filter((m) => {
-      const matchesDay = m.matchday === selectedMatchday;
+      const matchesDay = activeMatchday !== null && (m.matchday ?? 0) === activeMatchday;
       const matchesStatus = statusFilter === 'all' || m.status === statusFilter;
       return matchesDay && matchesStatus;
     });
-  }, [matches, selectedMatchday, statusFilter]);
+  }, [matches, activeMatchday, statusFilter]);
 
   const openMatchModal = (match: Match) => {
     setActiveMatch(match);
@@ -106,20 +116,21 @@ export const FixtureView: React.FC<FixtureViewProps> = ({
               aria-label="Seleccionar jornada"
               className="flex items-center gap-1 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-1"
             >
-              {[13, 14, 15].map((day) => (
+              {availableMatchdays.map((day) => (
                 <button
                   key={day}
                   type="button"
                   onClick={() => setSelectedMatchday(day)}
                   className={`min-h-[40px] rounded-lg px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E3A8A] ${
-                    selectedMatchday === day
+                    activeMatchday === day
                       ? 'bg-[#1E3A8A] text-white'
                       : 'text-slate-700 hover:bg-white hover:text-[#1E3A8A]'
                   }`}
                 >
-                  Fecha {day}
+                  {day === 0 ? 'Fecha por asignar' : `Fecha ${day}`}
                 </button>
               ))}
+              {availableMatchdays.length === 0 && <span className="px-3 py-2 text-xs text-slate-500">Sin fechas cargadas</span>}
             </div>
 
             {/* Filtro por estado */}
@@ -158,7 +169,11 @@ export const FixtureView: React.FC<FixtureViewProps> = ({
       {filteredMatches.length === 0 ? (
         <div className="rounded-2xl border border-[#E2E8F0] bg-white p-10 text-center">
           <p className="text-sm font-medium text-slate-700">
-            No hay encuentros con el filtro seleccionado en la Fecha {selectedMatchday}.
+            {activeMatchday === null
+              ? 'No hay partidos cargados. Revisa la conexión y los datos de Neon.'
+              : activeMatchday === 0
+                ? 'No hay encuentros con el filtro seleccionado que tengan fecha por asignar.'
+                : `No hay encuentros con el filtro seleccionado en la Fecha ${activeMatchday}.`}
           </p>
         </div>
       ) : (
@@ -279,7 +294,7 @@ export const FixtureView: React.FC<FixtureViewProps> = ({
             <div className="flex items-start justify-between gap-4 border-b border-[#E2E8F0] pb-4">
               <div>
                 <p className="text-xs font-semibold text-[#047857]">
-                  Fecha {activeMatch.matchday} · {activeMatch.date} · {activeMatch.time}
+                  {activeMatch.matchday === null ? 'Fecha por asignar' : `Fecha ${activeMatch.matchday}`} · {activeMatch.date} · {activeMatch.time}
                 </p>
                 <h3
                   id="match-modal-title"

@@ -1,5 +1,5 @@
 import React, { FormEvent, useEffect, useState } from 'react';
-import { BadgeCheck, CircleUserRound, LogOut, Shield, ShieldCheck, Trophy } from 'lucide-react';
+import { BadgeCheck, CircleUserRound, LogOut, Shield, ShieldCheck, Trophy, UserRoundCog } from 'lucide-react';
 import { AuthSession, Club, UserRole } from '../types/tournament';
 import { PROFILE_AVATARS, UserProfileSettings } from '../types/profile';
 import { ClubBadge } from './ClubBadge';
@@ -52,8 +52,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, clubs, 
     <div className="mx-auto max-w-5xl space-y-6">
       <header>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#047857]">Mi cuenta</p>
-        <h1 className="mt-1 font-display text-2xl font-extrabold text-[#0F172A]">Perfil y roles</h1>
-        <p className="mt-1 text-sm text-slate-600">Consulta tus datos y los permisos disponibles en LigaPro Ecuador.</p>
+        <h1 className="mt-1 font-display text-2xl font-extrabold text-[#0F172A]">Configurar mi cuenta</h1>
+        <p className="mt-1 text-sm text-slate-600">Administra tu perfil, tu equipo favorito y consulta los permisos disponibles.</p>
       </header>
 
       <section className="overflow-hidden rounded-2xl border border-[#D9E2F0] bg-white shadow-sm">
@@ -86,8 +86,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, clubs, 
 
       <section className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm sm:p-6">
         <div>
-          <h2 className="font-display text-lg font-bold text-[#0F172A]">Personaliza tu perfil</h2>
-          <p className="mt-1 text-sm text-slate-600">Elige cómo apareces y cuál es tu equipo favorito.</p>
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-blue-50 p-2.5 text-[#1E3A8A]"><UserRoundCog className="h-5 w-5" /></div>
+            <div><h2 className="font-display text-lg font-bold text-[#0F172A]">Datos y preferencias</h2>
+            <p className="mt-1 text-sm text-slate-600">Estos cambios se guardan en tu perfil de Neon.</p></div>
+          </div>
         </div>
         <form onSubmit={handleSave} className="mt-5 space-y-5">
           <label className="block text-sm font-semibold text-slate-700">
@@ -95,10 +98,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, clubs, 
             <input
               type="text"
               maxLength={60}
+              disabled={!canSaveProfile}
               value={form.displayName}
-              onChange={(event) => setForm((current) => ({ ...current, displayName: event.target.value }))}
+              onChange={(event) => { setSaved(false); setForm((current) => ({ ...current, displayName: event.target.value })); }}
               placeholder={user.name || 'Escribe tu nombre'}
-              className="mt-1.5 min-h-11 w-full rounded-lg border border-[#CBD5E1] px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100"
+              className="mt-1.5 min-h-11 w-full rounded-lg border border-[#CBD5E1] px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
             />
           </label>
 
@@ -106,7 +110,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, clubs, 
             Equipo favorito
             <select
               value={form.favoriteClubId}
-              onChange={(event) => setForm((current) => ({ ...current, favoriteClubId: event.target.value }))}
+              onChange={(event) => { setSaved(false); setForm((current) => ({ ...current, favoriteClubId: event.target.value })); }}
               disabled={!canSaveProfile}
               className="mt-1.5 min-h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100"
             >
@@ -126,15 +130,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, clubs, 
                   aria-label={`Elegir avatar ${option.name}`}
                   aria-pressed={selected}
                   disabled={!canSaveProfile}
-                  onClick={() => setForm((current) => ({ ...current, avatarId: option.id }))}
-                  className={`flex h-14 w-14 items-center justify-center rounded-xl border text-2xl transition-colors ${selected ? 'border-[#1E3A8A] bg-blue-50 ring-2 ring-blue-200' : 'border-[#CBD5E1] bg-white hover:bg-slate-50'}`}
+                  onClick={() => { setSaved(false); setForm((current) => ({ ...current, avatarId: option.id })); }}
+                  className={`flex h-14 w-14 items-center justify-center rounded-xl border text-2xl transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${selected ? 'border-[#1E3A8A] bg-blue-50 ring-2 ring-blue-200' : 'border-[#CBD5E1] bg-white hover:bg-slate-50'}`}
                 >{option.emoji}</button>;
               })}
             </div>
             <p className="mt-2 text-xs text-slate-500">Puedes cambiar tu avatar cuando quieras.</p>
           </fieldset>
 
-          {!canSaveProfile && <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">Conecta la base de Neon para guardar tu perfil y equipo favorito.</p>}
+          {!canSaveProfile && <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">No se pueden guardar cambios ahora. Comprueba que DATABASE_URL esté configurada en Netlify y que la conexión con Neon esté activa; vuelve a cargar la aplicación cuando esté lista.</p>}
           {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
           {saved && <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Perfil guardado en Neon.</p>}
           <button type="submit" disabled={saving || !canSaveProfile} className="min-h-11 rounded-lg bg-[#1E3A8A] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#172E6E] disabled:cursor-not-allowed disabled:opacity-60">

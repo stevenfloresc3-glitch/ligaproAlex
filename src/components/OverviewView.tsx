@@ -60,13 +60,17 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       : '0.00';
 
   const currentMatchday = getCurrentMatchday(matches);
-  const currentRoundMatches = matches.filter((match) => match.matchday === currentMatchday);
+  const currentRoundMatches = currentMatchday === null
+    ? []
+    : matches.filter((match) => match.matchday === currentMatchday);
   const featuredMatches = currentRoundMatches.slice(0, 4);
-  const roundStatus = currentRoundMatches.some((match) => match.status === 'En curso')
-    ? 'En desarrollo'
-    : currentRoundMatches.some((match) => match.status === 'Programado')
-      ? 'Por iniciar'
-      : 'Finalizada';
+  const roundStatus = currentMatchday === null
+    ? 'Sin datos de calendario'
+    : currentRoundMatches.some((match) => match.status === 'En curso')
+      ? 'En desarrollo'
+      : currentRoundMatches.some((match) => match.status === 'Programado')
+        ? 'Por iniciar'
+        : 'Finalizada';
   const topScorers = [...players]
     .sort((a, b) => b.goals - a.goals || b.assists - a.assists)
     .slice(0, 5);
@@ -101,7 +105,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             className="min-h-[44px] inline-flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-4 py-2.5 text-xs font-semibold text-white whitespace-nowrap hover:bg-[#172E6E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E3A8A]"
           >
             <Calendar className="h-4 w-4" aria-hidden="true" />
-            <span>Ver Fecha {currentMatchday}</span>
+            <span>{currentMatchday === null ? 'Sin calendario' : `Ver Fecha ${currentMatchday}`}</span>
           </button>
           <button
             type="button"
@@ -127,7 +131,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 sm:p-5">
           <p className="text-xs font-medium text-slate-600">Jornada Actual</p>
           <p className="mt-2 font-mono-tabular text-2xl sm:text-3xl font-bold text-[#1E3A8A]">
-            Fecha {currentMatchday}
+            {currentMatchday === null ? 'Sin calendario' : `Fecha ${currentMatchday}`}
           </p>
           <p className="mt-1 text-xs text-[#047857] font-medium">
             {roundStatus}
@@ -166,7 +170,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             <div className="flex items-center justify-between gap-3 border-b border-[#E2E8F0] pb-4">
               <div>
                 <h2 className="font-display text-lg font-bold text-[#0F172A]">
-                  Jornada {currentMatchday} · Encuentros Destacados
+                  {currentMatchday === null ? 'Encuentros Destacados' : `Jornada ${currentMatchday} · Encuentros Destacados`}
                 </h2>
                 <p className="text-xs text-slate-600">
                   Resultados recientes y programación oficial del fin de semana

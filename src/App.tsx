@@ -26,6 +26,7 @@ import { AuthSession, Match, NavSection, UserRole } from './types/tournament';
 export default function App() {
   const authConfigured = Boolean(authClient);
   const [authUser, setAuthUser] = useState<NeonUser | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [userRole, setUserRole] = useState<UserRole>('publico');
   const [profileSettings, setProfileSettings] = useState<UserProfileSettings>(DEFAULT_PROFILE_SETTINGS);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -60,6 +61,28 @@ export default function App() {
     document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
     try { localStorage.setItem('ligapro-theme', isDarkMode ? 'dark' : 'light'); } catch { /* Theme still works for this session. */ }
   }, [isDarkMode]);
+
+  useEffect(() => {
+    let active = true;
+    if (!authClient) {
+      setCheckingSession(false);
+      return () => { active = false; };
+    }
+
+    authClient.getSession()
+      .then((result) => {
+        const user = result.data?.user;
+        if (active && user) {
+          setAuthUser({ id: user.id, email: user.email, name: user.name });
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setCheckingSession(false);
+      });
+
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -114,10 +137,11 @@ export default function App() {
         if (Array.isArray(payload.matches)) {
           setMatches(payload.matches.map((row: Record<string, unknown>) => {
             const kickoff = new Date(String(row.kickoff_at));
+            const roundNumber = Number(row.round_number);
             const rawStatus = String(row.status ?? '').toLowerCase();
             const status = rawStatus.includes('final') ? 'Finalizado' : rawStatus.includes('curso') ? 'En curso' : 'Programado';
             return {
-              id: String(row.id), matchday: Number(row.round_number ?? 1), date: Number.isNaN(kickoff.getTime()) ? '' : kickoff.toISOString().slice(0, 10),
+              id: String(row.id), matchday: Number.isInteger(roundNumber) && roundNumber > 0 ? roundNumber : null, date: Number.isNaN(kickoff.getTime()) ? '' : kickoff.toISOString().slice(0, 10),
               time: Number.isNaN(kickoff.getTime()) ? 'Por definir' : kickoff.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
               stadium: String(row.stadium ?? 'Por definir'), city: String(row.city ?? ''), homeClubId: String(row.home_club_id), awayClubId: String(row.away_club_id),
               homeScore: row.home_goals == null ? null : Number(row.home_goals), awayScore: row.away_goals == null ? null : Number(row.away_goals), status,
@@ -193,6 +217,10 @@ export default function App() {
     }
     setAuthUser(user);
   };
+
+  if (checkingSession) {
+    return <main className="flex min-h-screen items-center justify-center bg-[#0B1739] text-sm font-semibold text-white">Comprobando tu sesión…</main>;
+  }
 
   if (!authUser) {
     return <NeonAuthDialog required onClose={() => undefined} onAuthenticated={handleAuthenticated} />;

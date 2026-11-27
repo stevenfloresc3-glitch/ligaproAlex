@@ -135,7 +135,7 @@ export const ActasView: React.FC<ActasViewProps> = ({
           <div className="flex flex-col gap-3 border-b border-[#E2E8F0] pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-display text-lg font-bold text-[#0F172A]">
-                Control de Actas de Partido · Fecha {currentMatchday}
+                Control de Actas de Partido · {currentMatchday === null ? 'Sin calendario' : `Fecha ${currentMatchday}`}
               </h2>
               <p className="mt-0.5 text-sm text-slate-600">
                 {session.role === 'admin'
@@ -165,7 +165,7 @@ export const ActasView: React.FC<ActasViewProps> = ({
                 >
                   <div>
                     <p className="font-display text-sm font-bold text-[#0F172A]">
-                      Fecha {m.matchday} · {home.name} vs. {away.name}
+                      {m.matchday === null ? 'Fecha por asignar' : `Fecha ${m.matchday}`} · {home.name} vs. {away.name}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-600">
                       Comisario: {m.comisario} · Estado partido: {m.status} · Acta:{' '}

@@ -40,7 +40,7 @@ export type ActaStatus = 'Aprobada' | 'Pendiente' | 'En revisión';
 
 export interface Match {
   id: string;
-  matchday: number;
+  matchday: number | null;
   date: string;
   time: string;
   stadium: string;

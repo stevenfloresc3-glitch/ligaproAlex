@@ -1,5 +1,5 @@
 import React, { FormEvent, useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, X } from 'lucide-react';
 import { authClient } from '../lib/auth';
 import { LigaProLogo } from './LigaProLogo';
 
@@ -15,10 +15,23 @@ interface NeonAuthDialogProps {
   onAuthenticated: (user: NeonUser, favoriteClubId?: string) => void | Promise<void>;
 }
 
+function authErrorMessage(message: string) {
+  if (/invalid.?origin|invalid.?domain|untrusted.?origin/i.test(message)) {
+    return `Neon Auth rechazó este dominio (${window.location.origin}). Añádelo en Neon Auth > Configuration > Trusted domains y vuelve a intentarlo.`;
+  }
+  if (/invalid.*(credential|password|email)|INVALID_EMAIL_OR_PASSWORD/i.test(message)) {
+    return 'Correo o contraseña incorrectos.';
+  }
+  return message || 'No se pudo completar la solicitud. Comprueba la conexión e inténtalo de nuevo.';
+}
+
 export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false, onClose, onAuthenticated }) => {
-  const [mode, setMode] = useState<'signup' | 'signin'>('signup');
+  const [mode, setMode] = useState<'signup' | 'signin' | 'success'>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [createdUser, setCreatedUser] = useState<NeonUser | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [favoriteClubId, setFavoriteClubId] = useState('');
   const [clubs, setClubs] = useState<Array<{ id: string; name: string }>>([]);
   const [pending, setPending] = useState(false);
@@ -50,6 +63,10 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
       setError('Falta configurar VITE_NEON_AUTH_URL en este entorno.');
       return;
     }
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
+      return;
+    }
 
     setPending(true);
     try {
@@ -68,8 +85,11 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
           setError('Este correo ya tiene una cuenta. Selecciona “Ya tengo cuenta” para iniciar sesión.');
           return;
         }
-        const detail = causeMessage ? ` (${causeMessage})` : '';
-        setError(`Neon Auth no respondió a la solicitud${detail}. Comprueba la conexión e inténtalo otra vez.`);
+        if (mode === 'signin' && /invalid.*(credential|password|email)|INVALID_EMAIL_OR_PASSWORD/i.test(causeMessage)) {
+          setError('Correo o contraseña incorrectos.');
+          return;
+        }
+        setError(authErrorMessage(causeMessage));
         return;
       }
 
@@ -78,7 +98,7 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
           setError('Este correo ya tiene una cuenta. Selecciona “Ya tengo cuenta” para iniciar sesión.');
           return;
         }
-        setError(result.error.message || 'No se pudo completar la solicitud.');
+        setError(authErrorMessage(result.error.message || ''));
         return;
       }
 
@@ -87,7 +107,10 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
         sessionResult = await authClient.getSession();
       } catch {
         if (mode === 'signup') {
-          setNotice('Neon aceptó el registro, pero no se pudo abrir la sesión. Prueba “Ya tengo cuenta” o revisa tu correo por si requiere verificación.');
+          setCreatedUser(null);
+          setMode('success');
+          setPassword('');
+          setConfirmPassword('');
         } else {
           setError('Se aceptó el inicio de sesión, pero no se pudo recuperar la sesión. Intenta de nuevo.');
         }
@@ -95,16 +118,32 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
       }
       const currentUser = sessionResult.data?.user;
       if (currentUser) {
-        await onAuthenticated({
+        const user = {
           id: currentUser.id,
           email: currentUser.email,
           name: currentUser.name,
-        }, mode === 'signup' ? favoriteClubId || undefined : undefined);
+        };
+        if (mode === 'signup') {
+          setCreatedUser(user);
+          setMode('success');
+          setPassword('');
+          setConfirmPassword('');
+        } else {
+          await onAuthenticated(user);
+        }
       } else if (mode === 'signup') {
-        setNotice('Cuenta creada. Si Neon solicita verificar el correo, revisa tu bandeja de entrada.');
+        setCreatedUser(null);
+        setMode('success');
+        setPassword('');
+        setConfirmPassword('');
       } else {
         setError(sessionResult.error?.message || 'No se pudo recuperar la sesión. Intenta de nuevo.');
       }
+    } catch (cause) {
+      const causeMessage = cause instanceof Error ? cause.message : '';
+      setError(causeMessage
+        ? `No se pudo completar la solicitud (${causeMessage}). Inténtalo de nuevo.`
+        : 'No se pudo completar la solicitud. Comprueba la conexión e inténtalo de nuevo.');
     } finally {
       setPending(false);
     }
@@ -112,7 +151,7 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
 
   return (
     <main className={required ? 'relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0B1739] px-4 py-10 sm:px-6' : 'fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4'}>
-      {required && (
+      {required && mode !== 'success' && (
         <>
           <div className="pointer-events-none absolute -left-32 -top-40 h-96 w-96 rounded-full bg-[#1E3A8A]/50 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-48 -right-24 h-[32rem] w-[32rem] rounded-full bg-emerald-400/10 blur-3xl" />
@@ -142,15 +181,28 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-[#047857]">Cuenta LigaPro</p>
             <h2 id="auth-title" className="mt-1 font-display text-2xl font-bold text-[#0F172A]">
-              {mode === 'signup' ? 'Crea tu cuenta' : 'Qué bueno verte de nuevo'}
+              {mode === 'success' ? 'Cuenta creada exitosamente' : mode === 'signup' ? 'Crea tu cuenta' : 'Qué bueno verte de nuevo'}
             </h2>
-            <p className="mt-1 text-sm text-slate-600">{mode === 'signup' ? 'Regístrate para entrar al panel y hacer tus pronósticos.' : 'Ingresa con el correo y la contraseña de tu cuenta.'}</p>
+            <p className="mt-1 text-sm text-slate-600">{mode === 'success' ? 'Tu registro en LigaPro se completó.' : mode === 'signup' ? 'Regístrate para entrar al panel y hacer tus pronósticos.' : 'Ingresa con el correo y la contraseña de tu cuenta.'}</p>
           </div>
           {!required && <button type="button" onClick={onClose} aria-label="Cerrar" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800">
             <X className="h-5 w-5" />
           </button>}
         </div>
 
+        {mode === 'success' ? (
+          <div className="mt-6 space-y-5 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"><CheckCircle2 className="h-10 w-10" /></div>
+            <div><p className="font-semibold text-[#0F172A]">¡Bienvenido a LigaPro!</p><p className="mt-2 text-sm leading-6 text-slate-600">Creamos la cuenta para <strong className="break-all">{email.trim()}</strong>. {createdUser ? 'Ya puedes entrar y comenzar a configurar tu perfil.' : 'Si Neon solicita verificar tu correo, revisa tu bandeja de entrada y luego inicia sesión.'}</p></div>
+            {createdUser ? (
+              <button type="button" disabled={pending} onClick={async () => { setPending(true); try { await onAuthenticated(createdUser, favoriteClubId || undefined); } catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo abrir tu cuenta. Inténtalo otra vez.'); setMode('signin'); } finally { setPending(false); } }} className="min-h-11 w-full rounded-lg bg-[#1E3A8A] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#172E6E] disabled:opacity-60">{pending ? 'Abriendo cuenta…' : 'Entrar a LigaPro'}</button>
+            ) : (
+              <button type="button" onClick={() => { setMode('signin'); setError(null); setNotice('Cuenta creada. Si se requiere, verifica tu correo antes de iniciar sesión.'); }} className="min-h-11 w-full rounded-lg bg-[#1E3A8A] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#172E6E]">Ir al inicio de sesión</button>
+            )}
+            {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+          </div>
+        ) : (
+        <>
         <div className="mt-5 grid grid-cols-2 rounded-xl bg-slate-100 p-1">
           <button type="button" onClick={() => { setMode('signup'); setError(null); setNotice(null); }} aria-pressed={mode === 'signup'} className={`min-h-10 rounded-lg px-3 text-sm font-semibold ${mode === 'signup' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`}>Registrarme</button>
           <button type="button" onClick={() => { setMode('signin'); setError(null); setNotice(null); }} aria-pressed={mode === 'signin'} className={`min-h-10 rounded-lg px-3 text-sm font-semibold ${mode === 'signin' ? 'bg-white text-[#1E3A8A] shadow-sm' : 'text-slate-600'}`}>Ya tengo cuenta</button>
@@ -161,10 +213,25 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
             Correo electrónico
             <input type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1.5 min-h-11 w-full rounded-lg border border-[#CBD5E1] px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100" placeholder="nombre@correo.com" />
           </label>
-          <label className="block text-sm font-semibold text-slate-700">
-            Contraseña
-            <input type="password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} className="mt-1.5 min-h-11 w-full rounded-lg border border-[#CBD5E1] px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100" placeholder="Al menos 8 caracteres" />
-          </label>
+          {(mode === 'signup' || mode === 'signin') && (
+            <>
+              <label className="block text-sm font-semibold text-slate-700">
+                Contraseña
+                <span className="relative mt-1.5 block">
+                  <input type={showPassword ? 'text' : 'password'} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} required minLength={mode === 'signin' ? undefined : 8} value={password} onChange={(event) => setPassword(event.target.value)} className="min-h-11 w-full rounded-lg border border-[#CBD5E1] px-3 pr-12 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100" placeholder={mode === 'signin' ? 'Tu contraseña' : 'Al menos 8 caracteres'} />
+                  <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={showPassword} className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-slate-500 hover:text-slate-800">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </span>
+              </label>
+              {mode === 'signup' && (
+                <label className="block text-sm font-semibold text-slate-700">
+                  Confirma la contraseña
+                  <input type={showPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="mt-1.5 min-h-11 w-full rounded-lg border border-[#CBD5E1] px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100" placeholder="Repite la contraseña" />
+                </label>
+              )}
+            </>
+          )}
 
           {mode === 'signup' && (
             <label className="block text-sm font-semibold text-slate-700">
@@ -181,13 +248,15 @@ export const NeonAuthDialog: React.FC<NeonAuthDialogProps> = ({ required = false
           {notice && <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{notice}</p>}
 
           <button type="submit" disabled={pending} className="min-h-11 w-full rounded-lg bg-[#1E3A8A] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#172E6E] disabled:cursor-wait disabled:opacity-60">
-            {pending ? 'Conectando…' : mode === 'signup' ? 'Crear cuenta con correo' : 'Iniciar sesión'}
+            {pending ? 'Procesando…' : mode === 'signup' ? 'Crear cuenta con correo' : 'Iniciar sesión'}
           </button>
         </form>
 
         <p className="mt-4 text-xs leading-relaxed text-slate-500">
           Las apuestas usan créditos virtuales; no hay depósitos ni premios en dinero real. Las cuentas nuevas tienen acceso de consulta y no habilitan funciones oficiales de gestión.
         </p>
+        </>
+        )}
         </div>
       </section>
     </main>

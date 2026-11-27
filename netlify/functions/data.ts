@@ -38,7 +38,12 @@ export default async function handler() {
         JOIN seasons s ON s.id = t.season_id
         LEFT JOIN stadiums st ON st.id = m.stadium_id
         WHERE t.series = 'A'
-          AND s.year = (SELECT MAX(year) FROM seasons)
+          AND s.year = (
+            SELECT MAX(s2.year)
+            FROM seasons s2
+            JOIN tournaments t2 ON t2.season_id = s2.id
+            WHERE t2.series = 'A'
+          )
         ORDER BY m.kickoff_at NULLS LAST
         LIMIT 300
       `,
