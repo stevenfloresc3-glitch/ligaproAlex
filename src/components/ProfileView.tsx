@@ -10,6 +10,7 @@ interface ProfileViewProps {
   clubs: Club[];
   profile: UserProfileSettings;
   canSaveProfile: boolean;
+  profileUnavailableMessage: string;
   onSaveProfile: (profile: UserProfileSettings) => Promise<void>;
   onSignOut: () => void;
 }
@@ -21,7 +22,7 @@ const ROLES: { id: UserRole; title: string; description: string }[] = [
   { id: 'admin', title: 'Administrador LigaPro', description: 'Supervisa clubes, temporadas, usuarios y la operación oficial de la plataforma.' },
 ];
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, clubs, profile, canSaveProfile, onSaveProfile, onSignOut }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, clubs, profile, canSaveProfile, profileUnavailableMessage, onSaveProfile, onSignOut }) => {
   const [form, setForm] = useState<UserProfileSettings>(profile);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -138,7 +139,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, session, clubs, 
             <p className="mt-2 text-xs text-slate-500">Puedes cambiar tu avatar cuando quieras.</p>
           </fieldset>
 
-          {!canSaveProfile && <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">No se pueden guardar cambios ahora. Comprueba que DATABASE_URL esté configurada en Netlify y que la conexión con Neon esté activa; vuelve a cargar la aplicación cuando esté lista.</p>}
+          {!canSaveProfile && <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{profileUnavailableMessage || 'Comprobando la conexión del perfil con Neon…'}</p>}
           {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
           {saved && <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Perfil guardado en Neon.</p>}
           <button type="submit" disabled={saving || !canSaveProfile} className="min-h-11 rounded-lg bg-[#1E3A8A] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#172E6E] disabled:cursor-not-allowed disabled:opacity-60">

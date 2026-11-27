@@ -36,6 +36,8 @@ export default function App() {
   const [clubs, setClubs] = useState(INITIAL_CLUBS);
   const [matches, setMatches] = useState<Match[]>(INITIAL_MATCHES);
   const [isLiveData, setIsLiveData] = useState(false);
+  const [profileApiReady, setProfileApiReady] = useState(false);
+  const [profileApiError, setProfileApiError] = useState('');
 
   const roleLabels: Record<UserRole, string> = {
     publico: 'Aficionado · Solo lectura',
@@ -92,23 +94,35 @@ export default function App() {
       try {
         if (!authClient) return;
         const token = await getNeonAuthToken();
-        if (!token) return;
+        if (!token) {
+          if (active) setProfileApiError('No se pudo comprobar la sesión con Neon Auth. Cierra sesión e inicia otra vez.');
+          return;
+        }
         const response = await fetch('/api/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!response.ok) return;
-        const payload = await response.json() as { role?: UserRole; profile?: UserProfileSettings };
+        const payload = await response.json() as { error?: string; role?: UserRole; profile?: UserProfileSettings };
+        if (!response.ok || !payload.profile) {
+          if (active) setProfileApiError(payload.error || 'No se pudo conectar el perfil con Neon. Revisa la configuración de la función /api/profile.');
+          return;
+        }
         if (active && payload.role && payload.role in roleLabels) {
           setUserRole(payload.role);
         }
         if (active && payload.profile) setProfileSettings(payload.profile);
+        if (active) {
+          setProfileApiReady(true);
+          setProfileApiError('');
+        }
       } catch {
-        // Missing role data keeps the account in the least-privileged role.
+        if (active) setProfileApiError('No se pudo comunicar con /api/profile. Comprueba que la función de Netlify esté activa.');
       }
     };
 
     setUserRole('publico');
     setProfileSettings(DEFAULT_PROFILE_SETTINGS);
+    setProfileApiReady(false);
+    setProfileApiError('');
     void loadRole();
     fetch('/api/data')
       .then(async (response) => {
@@ -295,7 +309,8 @@ export default function App() {
           session={session}
           clubs={clubs}
           profile={profileSettings}
-          canSaveProfile={isLiveData}
+          canSaveProfile={profileApiReady}
+          profileUnavailableMessage={profileApiError}
           onSaveProfile={handleSaveProfile}
           onSignOut={handleSignOut}
         />
