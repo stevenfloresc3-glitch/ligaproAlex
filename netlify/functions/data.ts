@@ -54,11 +54,19 @@ export default async function handler() {
     });
   } catch (cause) {
     const dbError = typeof cause === 'object' && cause !== null
-      ? cause as { code?: unknown; message?: unknown }
+      ? cause as { code?: unknown; message?: unknown; cause?: unknown }
       : null;
-    const errorCode = typeof dbError?.code === 'string' ? dbError.code : 'UNKNOWN';
-    // Keep the SQLSTATE in one message; Netlify may omit additional console arguments.
-    console.error(`LigaPro data query failed: ${errorCode}`);
+    const nestedError = typeof dbError?.cause === 'object' && dbError.cause !== null
+      ? dbError.cause as { code?: unknown; message?: unknown }
+      : null;
+    const errorCode = typeof dbError?.code === 'string'
+      ? dbError.code
+      : typeof nestedError?.code === 'string' ? nestedError.code : 'UNKNOWN';
+    const errorDetail = typeof dbError?.message === 'string'
+      ? dbError.message
+      : typeof nestedError?.message === 'string' ? nestedError.message : String(cause);
+    // One log string keeps the underlying connection/query error visible in Netlify.
+    console.error(`LigaPro data query failed: ${errorCode} - ${errorDetail.slice(0, 300)}`);
     const errorMessage = errorCode === '28P01'
       ? 'Neon rechazó las credenciales de DATABASE_URL. Actualiza la clave con la conexión vigente de la rama production.'
       : errorCode === '3D000'
