@@ -125,9 +125,19 @@ export default async function handler(request: Request) {
       headers: { 'Cache-Control': 'no-store' },
     });
   } catch (cause) {
-    const dbError = typeof cause === 'object' && cause !== null ? cause as { code?: unknown; message?: unknown } : null;
-    const sqlState = typeof dbError?.code === 'string' ? dbError.code : '';
-    console.error(`LigaPro profile query failed: ${sqlState || 'UNKNOWN'}`);
+    const dbError = typeof cause === 'object' && cause !== null
+      ? cause as { code?: unknown; message?: unknown; cause?: unknown }
+      : null;
+    const nestedError = typeof dbError?.cause === 'object' && dbError.cause !== null
+      ? dbError.cause as { code?: unknown; message?: unknown }
+      : null;
+    const sqlState = typeof dbError?.code === 'string'
+      ? dbError.code
+      : typeof nestedError?.code === 'string' ? nestedError.code : '';
+    const errorDetail = typeof dbError?.message === 'string'
+      ? dbError.message
+      : typeof nestedError?.message === 'string' ? nestedError.message : String(cause);
+    console.error(`LigaPro profile query failed: ${sqlState || 'UNKNOWN'} - ${errorDetail.slice(0, 300)}`);
     const errorMessage = sqlState === '28P01'
       ? 'Neon rechazó las credenciales de DATABASE_URL. Actualiza esa variable en Netlify con la conexión vigente de la rama production.'
       : sqlState === '42P01'
